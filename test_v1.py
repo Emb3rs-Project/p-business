@@ -45,15 +45,24 @@ rls = np.array([[0, 0], [0, 2], [1, 1], [1, 3], [1, 6], [2, 4], [2, 5]], dtype=i
 #                         FUNCTION CALL START
 #---------------------------------------------------------------------------
 
-NPV_socio, IRR_socio, NPV_socio_sen, NPV_i, IRR_i, NPV_sen_i = BM(rls, capex_t, opex_t, opcost_ih, dispatch_ih, price_h, discountrate_i, projectduration)
+NPV_socio, IRR_socio, NPV_socio_sen, NPV_i, IRR_i, NPV_sen_i, r_sen, r_sen_b = BM(rls, capex_t, opex_t, opcost_ih, dispatch_ih, price_h, discountrate_i, projectduration)
 
-#print('NPV_socio', NPV_socio)
-print('NPV_socio_sen', NPV_socio_sen)
-#print('NPV_i', NPV_i)
-print('NPV_sen_i', NPV_sen_i)
-#print('IRR for two scenarios')
-#print('IRR socio-economic scenario', IRR_socio)
-#print('IRR business scenario', IRR_i)
+### OUTPUT AND JSON CONVERSION
+
+BM_output = {
+    'NPV_socio-economic' : NPV_socio,
+    'IRR_socio-economic' : IRR_socio,
+    'Sensitivity_NPV_socio-economic' : NPV_socio_sen.tolist(),
+    'NPV_comm_actor' : NPV_i.tolist(),
+    'IRR_comm_actor' : IRR_i.tolist(),
+    'Sensitivity_NPV_comm_actor'  : NPV_sen_i.tolist(),
+    'Discountrate_socio' : r_sen.tolist(),
+    'Discountrate_business' : r_sen_b.tolist()
+}
+
+BM_output_json = js.dumps(BM_output)
+
+
 # --------------------------------------------------------------------------
 #                         FUNCTION CALL END
 #---------------------------------------------------------------------------
