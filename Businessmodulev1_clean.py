@@ -115,31 +115,5 @@ def BM(rls, capex_t, opex_t, opcost_ih, dispatch_ih, price_h, discountrate_i, pr
 
     NPV_sen_i = sumyearlyflow_i - capex_i # 2D matrix
 
-# --------------------------------------------------------------------------
-#                         Plot function START
-#---------------------------------------------------------------------------
-    print('IRR for two scenarios')
-    print('IRR socio-economic scenario', IRR_socio)
-    print('IRR business scenario', IRR_i)
 
-    plt.figure()
-    plt.subplot(211)
-    plt.plot(r_sen, NPV_socio_sen)
-    plt.ylabel('NPV')
-    plt.xlabel('Discount rate')
-    plt.title('NPV for Socio-economic Scenario')
-
-    plt.subplot(212)
-    for i in range(0, netyearlyflow_i.size):
-     plt.plot(r_sen_b, NPV_sen_i[i,:], label = "actor %s" % i)
-
-    plt.legend(loc="upper left")
-    plt.ylabel('NPV')
-    plt.xlabel('Discount rate')
-    plt.title('NPV for Business Scenario')
-
-    plt.show()
-# --------------------------------------------------------------------------
-#                         Plot function END
-#---------------------------------------------------------------------------
-    return NPV_socio, IRR_socio, NPV_socio_sen, NPV_i, IRR_i, NPV_sen_i
+    return NPV_socio, IRR_socio, NPV_socio_sen, NPV_i, IRR_i, NPV_sen_i, r_sen, r_sen_b
