@@ -4,11 +4,22 @@ import matplotlib.pyplot as plt
 
 # function arrguements
 
-def BM(rls, capex_t, opex_t, opcost_ih, dispatch_ih, price_h, discountrate_i, projectduration):
+def BM(BM_input_dict):
 
 # --------------------------------------------------------------------------
 #                         Pre-proccessing / Data preparation START
 #---------------------------------------------------------------------------
+# input extraction from dictionary
+
+    dispatch_ih = np.array(BM_input_dict['dispatch_ih'])   # MWh (per actor per hour for a whole year), int, 2D array
+    price_h=   np.array(BM_input_dict['price_h'])     # EUR/MWh (per actor per hour for a whole year) float, 1D array
+    opcost_ih = np.array(BM_input_dict['opcost_ih'])   # EUR (per hour per actor for a whole year), float, 2D array
+    # OR if no op_cost is given; then
+    capex_t  = np.array(BM_input_dict['capex_t']) # EUR, int, 1D array
+    opex_t   = np.array(BM_input_dict['opex_t'], dtype=int)# EUR/year, int, 1D array
+    projectduration =  BM_input_dict['projectduration']   # int
+    discountrate_i =   np.array(BM_input_dict['discountrate_i'])
+    rls = np.array(BM_input_dict['rls'], dtype=int) ### important connects actors (first col) with different tech (second col)
 
 #capex & opex from tech to actors
 
@@ -115,5 +126,15 @@ def BM(rls, capex_t, opex_t, opcost_ih, dispatch_ih, price_h, discountrate_i, pr
 
     NPV_sen_i = sumyearlyflow_i - capex_i # 2D matrix
 
+    BM_output = {
+        "NPV_socio-economic" : NPV_socio,
+        "IRR_socio-economic" : IRR_socio,
+        "Sensitivity_NPV_socio-economic" : NPV_socio_sen.tolist(),
+        "NPV_comm_actor" : NPV_i.tolist(),
+        "IRR_comm_actor" : IRR_i.tolist(),
+        "Sensitivity_NPV_comm_actor"  : NPV_sen_i.tolist(),
+        "Discountrate_socio" : r_sen.tolist(),
+        "Discountrate_business" : r_sen_b.tolist() }
 
-    return NPV_socio, IRR_socio, NPV_socio_sen, NPV_i, IRR_i, NPV_sen_i, r_sen, r_sen_b
+
+    return BM_output
