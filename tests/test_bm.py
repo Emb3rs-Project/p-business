@@ -41,6 +41,7 @@ def test_bm():
         "discountrate_i": [3, 5.5],
         # important connects acors (first col) with different techs (second col)
         "rls": [[0, 0], [0, 2], [1, 1], [1, 3], [1, 6], [2, 4], [2, 5]],
+        "sinks" : [0],
     }
 
     BM_output = BM(BM_input_dict)
