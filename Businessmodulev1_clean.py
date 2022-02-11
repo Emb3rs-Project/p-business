@@ -17,7 +17,7 @@ def BM(BM_input_dict):
     # EUR (per hour per actor for a whole year), float, 2D array
     opcost_ih = np.array(BM_input_dict["opcost_ih"])
     # OR if no op_cost is given; then
-    capex_t = np.array(BM_input_dict["capex_t"])  # EUR, int, 1D array
+    capex_tt = np.array(BM_input_dict["capex_tt"])  # EUR, int, 1D array
     # EUR/year, int, 1D array
     opex_t = np.array(BM_input_dict["opex_t"], dtype=int)
     projectduration = BM_input_dict["projectduration"]  # int
@@ -25,7 +25,14 @@ def BM(BM_input_dict):
     # important connects actors (first col) with different tech (second col)
     rls = np.array(BM_input_dict["rls"], dtype=int)
     s   = np.array(BM_input_dict["sinks"], dtype=int)
+    capex_st  = np.array(BM_input_dict['capex_st'])
+    capex_t_names  = np.array(BM_input_dict['capex_t_names'])
+    capex_s_names  = np.array(BM_input_dict['capex_s_names'])
+    sal_tt  = np.array(BM_input_dict['sal_tt'])
+    sal_st  = np.array(BM_input_dict['sal_st'])
 
+    capex_t = np.concatenate((capex_tt, capex_st))
+    sal_t = np.concatenate((sal_tt, sal_st))
     # capex & opex from tech to actors
 
     i = np.copy(rls)
@@ -36,6 +43,17 @@ def BM(BM_input_dict):
         np.sum(i[i[:, 0] == j, 1]) for j in range(np.max(i, axis=0)[0] + 1)
     ]
     capex_i = temp_i[0 : np.max(i, axis=0)[0] + 1][:, 0]
+
+    i= np.copy(rls)
+    temp = sal_t[i[:, 1]]
+    i[:, 1] = temp
+    temp_i = np.zeros((np.max(i, axis=0)[0] + 1, np.shape(i)[1]))
+    temp_i[0:np.max(i, axis=0)[0] + 1, 0] = [
+        np.sum(i[i[:, 0] == j, 1]) for j in range(np.max(i, axis=0)[0] + 1)
+    ]
+    sal_i = temp_i[0:np.max(i, axis=0)[0] + 1][:, 0]
+    capex_i = capex_i - sal_i
+
 
     i = np.copy(rls)
     temp = opex_t[i[:, 1]]
