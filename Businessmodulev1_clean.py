@@ -24,12 +24,12 @@ def BM(BM_input_dict):
     discountrate_i = np.array(BM_input_dict["discountrate_i"])
     # important connects actors (first col) with different tech (second col)
     rls = np.array(BM_input_dict["rls"], dtype=int)
-    s   = np.array(BM_input_dict["sinks"], dtype=int)
-    capex_st  = np.array(BM_input_dict['capex_st'])
-    capex_t_names  = np.array(BM_input_dict['capex_t_names'])
-    capex_s_names  = np.array(BM_input_dict['capex_s_names'])
-    sal_tt  = np.array(BM_input_dict['sal_tt'])
-    sal_st  = np.array(BM_input_dict['sal_st'])
+    s = np.array(BM_input_dict["sinks"], dtype=int)
+    capex_st = np.array(BM_input_dict["capex_st"])
+    capex_t_names = np.array(BM_input_dict["capex_t_names"])
+    capex_s_names = np.array(BM_input_dict["capex_s_names"])
+    sal_tt = np.array(BM_input_dict["sal_tt"])
+    sal_st = np.array(BM_input_dict["sal_st"])
 
     capex_t = np.concatenate((capex_tt, capex_st))
     sal_t = np.concatenate((sal_tt, sal_st))
@@ -44,16 +44,15 @@ def BM(BM_input_dict):
     ]
     capex_i = temp_i[0 : np.max(i, axis=0)[0] + 1][:, 0]
 
-    i= np.copy(rls)
+    i = np.copy(rls)
     temp = sal_t[i[:, 1]]
     i[:, 1] = temp
     temp_i = np.zeros((np.max(i, axis=0)[0] + 1, np.shape(i)[1]))
-    temp_i[0:np.max(i, axis=0)[0] + 1, 0] = [
+    temp_i[0 : np.max(i, axis=0)[0] + 1, 0] = [
         np.sum(i[i[:, 0] == j, 1]) for j in range(np.max(i, axis=0)[0] + 1)
     ]
-    sal_i = temp_i[0:np.max(i, axis=0)[0] + 1][:, 0]
+    sal_i = temp_i[0 : np.max(i, axis=0)[0] + 1][:, 0]
     capex_i = capex_i - sal_i
-
 
     i = np.copy(rls)
     temp = opex_t[i[:, 1]]
@@ -73,19 +72,20 @@ def BM(BM_input_dict):
     revenues_ih = dispatch_ih * price_h
     # total revenues of actors in a year; 1D array
     revenues_i = np.sum(revenues_ih, axis=1)
-    dispatch_i = np.sum(dispatch_ih, axis = 1)
+    dispatch_i = np.sum(dispatch_ih, axis=1)
     # seperating sink
     capex_s = capex_i[s]
     opex_s = opex_i[s]
-    opcost_s =opcost_i[s]
-    heat_cost_s = revenues_i[s] # money spent by sink to buy heat
-    dispatch_s = dispatch_i[s] #make sure dispatch also take into account energy consumed by sink
-    #seperating sources
+    opcost_s = opcost_i[s]
+    heat_cost_s = revenues_i[s]  # money spent by sink to buy heat
+    dispatch_s = dispatch_i[
+        s
+    ]  # make sure dispatch also take into account energy consumed by sink
+    # seperating sources
     capex_i = np.delete(capex_i, s)
     opex_i = np.delete(opex_i, s)
-    opcost_i =np.delete(opcost_i, s)
+    opcost_i = np.delete(opcost_i, s)
     revenues_i = np.delete(revenues_i, s)
-
 
     # --------------------------------------------------------------------------
     #                         Pre-proccessing / Data preparation END
@@ -170,13 +170,13 @@ def BM(BM_input_dict):
     NPV_sen_i = sumyearlyflow_i - capex_i  # 2D matrix
 
     # >>>>>>>>> LCOH calculation
-    sumrevflow=0
-    sumdisflow=0
-    for i in range(1, y+1):
-        sumrevflow += ((opex_s+opcost_s+heat_cost_s)/(1 + r_b)**i)
-        sumdisflow += (dispatch_s/(1 + r_b)**i)
+    sumrevflow = 0
+    sumdisflow = 0
+    for i in range(1, y + 1):
+        sumrevflow += (opex_s + opcost_s + heat_cost_s) / (1 + r_b) ** i
+        sumdisflow += dispatch_s / (1 + r_b) ** i
 
-    LCOH_s = (capex_s+ sumrevflow)/sumdisflow
+    LCOH_s = (capex_s + sumrevflow) / sumdisflow
 
     BM_output = {
         "NPV_socio-economic": NPV_socio,
@@ -187,49 +187,44 @@ def BM(BM_input_dict):
         "Sensitivity_NPV_comm_actor": NPV_sen_i.tolist(),
         "Discountrate_socio": r_sen.tolist(),
         "Discountrate_business": r_sen_b.tolist(),
-        "LCOH_s" : LCOH_s.tolist()
+        "LCOH_s": LCOH_s.tolist(),
     }
 
     return BM_output
 
 
-
 def int_heat_rec(heat_rec_input_dict):
-    c =  heat_rec_input_dict["capex"]
-    of =  heat_rec_input_dict["O&M_fix"]
-    d =  heat_rec_input_dict["energy_dispatch"]
-    r =  heat_rec_input_dict["discount_rate"]
-    rev =  heat_rec_input_dict["money_sav"]
-    c_q =  heat_rec_input_dict["carbon_sav_quant"]
-    c_m =  heat_rec_input_dict["carbon_sav_money"]
-    n =  heat_rec_input_dict["duration"]
+    c = heat_rec_input_dict["capex"]
+    of = heat_rec_input_dict["O&M_fix"]
+    d = heat_rec_input_dict["energy_dispatch"]
+    r = heat_rec_input_dict["discount_rate"]
+    rev = heat_rec_input_dict["money_sav"]
+    c_q = heat_rec_input_dict["carbon_sav_quant"]
+    c_m = heat_rec_input_dict["carbon_sav_money"]
+    n = heat_rec_input_dict["duration"]
 
-    r_sen = np.linspace(r*0.5, r*1.5, 5)
+    r_sen = np.linspace(r * 0.5, r * 1.5, 5)
     # >>>>>>>>> LCOH calculation
-    sumrevflow=0
-    sumdisflow=0
-    for i in range(1, n+1):
-        sumrevflow += (of/(1 + r_sen)**i)
-        sumdisflow += (d/(1 + r_sen)**i)
+    sumrevflow = 0
+    sumdisflow = 0
+    for i in range(1, n + 1):
+        sumrevflow += of / (1 + r_sen) ** i
+        sumdisflow += d / (1 + r_sen) ** i
 
-    LCOH = (c+ sumrevflow)/sumdisflow
+    LCOH = (c + sumrevflow) / sumdisflow
 
     # >>>>>>>>> NPV calculation
 
     netyearlyflow = rev + c_m - of
 
-    sumyearlyflow=0
-    for i in range(1, n+1):
-        sumyearlyflow += (netyearlyflow/(1 + r_sen)**i)
+    sumyearlyflow = 0
+    for i in range(1, n + 1):
+        sumyearlyflow += netyearlyflow / (1 + r_sen) ** i
 
     NPV = sumyearlyflow - c
 
     # >>> Output dictionary
 
-    heat_rec_output_dict = {
-        "LCOH_sen": LCOH,
-        "NPV_sen": NPV
-        }
+    heat_rec_output_dict = {"LCOH_sen": LCOH.tolist(), "NPV_sen": NPV.tolist()}
 
     return heat_rec_output_dict
-
