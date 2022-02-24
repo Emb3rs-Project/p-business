@@ -125,7 +125,7 @@ def BM(BM_input_dict):
     NPV_socio_sen = sumyearlyflow - capex - opex
 
     # np.append(-capex, np.full(y, netyearlyflow))
-    IRR_socio = npf.irr(np.append(-capex, -opex, np.full(y, netyearlyflow)))
+    IRR_socio = npf.irr(np.append(-(capex + opex), np.full(y, netyearlyflow)))
 
     # ------------------------------------------
     # if Business
