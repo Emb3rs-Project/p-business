@@ -15,11 +15,11 @@ def BM(BM_input_dict):
     # EUR/MWh (per actor per hour for a whole year) float, 1D array
     price_h = np.array(BM_input_dict["price_h"])
     # EUR (per hour per actor for a whole year), float, 2D array
-    opcost_ih = np.array(BM_input_dict["opcost_ih"])
+    opcost_i = np.array(BM_input_dict["opcost_i"])
     # OR if no op_cost is given; then
     capex_tt = np.array(BM_input_dict["capex_tt"])  # EUR, int, 1D array
     # EUR/year, int, 1D array
-    opex_t = np.array(BM_input_dict["opex_t"], dtype=int)
+    opex_tt = np.array(BM_input_dict["opex_tt"])
     projectduration = BM_input_dict["projectduration"]  # int
     discountrate_i = np.array(BM_input_dict["discountrate_i"])
     # important connects actors (first col) with different tech (second col)
@@ -33,6 +33,9 @@ def BM(BM_input_dict):
 
     capex_t = np.concatenate((capex_tt, capex_st))
     sal_t = np.concatenate((sal_tt, sal_st))
+    
+    opex_t = np.pad(opex_tt, (0, np.size(capex_st)), 'constant')
+
     # capex & opex from tech to actors
 
     i = np.copy(rls)
@@ -66,7 +69,7 @@ def BM(BM_input_dict):
     # Operational cost
     # opcost_ih = co2taxtot_ih + fuelcost_ih #optional
     # total operational cost of actors in a year; 1D array
-    opcost_i = np.sum(opcost_ih, axis=1)
+    #opcost_i = np.sum(opcost_ih, axis=1)
 
     # Revenues
     revenues_ih = dispatch_ih * price_h
