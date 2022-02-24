@@ -18,7 +18,7 @@ def test_bm():
         # EUR (per hour per actor for a whole year), float, 2D array
         "opcost_i": [2, 30, 40, 5, 60],
         "capex_tt": [100, 200, 300, 400, 500, 600, 700],  # EUR, int, 1D array
-        "opex_tt": [10, 20, 30, 40, 50, 60, 70],  # EUR/year, int, 1D array
+        "opex_tt": [10, 20, 30, 40, 50, 60, 70],  # EUR total, int, 1D array
         "projectduration": 5,
         "discountrate_i": [3, 5.5],
         # important connects acors (first col) with different techs (second col)
