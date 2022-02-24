@@ -30,6 +30,7 @@ def BM(BM_input_dict):
     capex_s_names = np.array(BM_input_dict["capex_s_names"])
     sal_tt = np.array(BM_input_dict["sal_tt"])
     sal_st = np.array(BM_input_dict["sal_st"])
+    net_cost = np.array(BM_input_dict["net_cost"])
 
     capex_t = np.concatenate((capex_tt, capex_st))
     sal_t = np.concatenate((sal_tt, sal_st))
@@ -98,10 +99,10 @@ def BM(BM_input_dict):
     #                         business mode conditional statement START
     # ---------------------------------------------------------------------------
     # if socio-economic (maybe not coz gonna calculate both scenario)
-    capex = np.sum(capex_i)
-    opex = np.sum(opex_i)
-    revenues = np.sum(revenues_i)
-    op_cost = np.sum(opcost_i)
+    capex = np.sum(capex_i) + np.sum(capex_s) + net_cost
+    opex = np.sum(opex_i) + np.sum(opex_s)
+    revenues = np.sum(revenues_i) + np.sum(heat_cost_s)
+    op_cost = np.sum(opcost_i) + np.sum(opcost_s)
     r = discountrate_i[0]
 
     # +- 50% variations with total 5 values in R
@@ -109,22 +110,22 @@ def BM(BM_input_dict):
     y = projectduration
 
     # NPV calculation
-    netyearlyflow = revenues - op_cost - opex
+    netyearlyflow = revenues - op_cost
 
     sumyearlyflow = 0
     for i in range(1, y + 1):
         sumyearlyflow += netyearlyflow / (1 + r) ** i
 
-    NPV_socio = sumyearlyflow - capex
+    NPV_socio = sumyearlyflow - capex - opex
 
     sumyearlyflow = 0
     for i in range(1, y + 1):
         sumyearlyflow += netyearlyflow / (1 + r_sen) ** i
 
-    NPV_socio_sen = sumyearlyflow - capex
+    NPV_socio_sen = sumyearlyflow - capex - opex
 
     # np.append(-capex, np.full(y, netyearlyflow))
-    IRR_socio = npf.irr(np.append(-capex, np.full(y, netyearlyflow)))
+    IRR_socio = npf.irr(np.append(-capex, -opex, np.full(y, netyearlyflow)))
 
     # ------------------------------------------
     # if Business
@@ -137,7 +138,7 @@ def BM(BM_input_dict):
     r_sen_b = np.linspace(r_b * 0.5, r_b * 1.5, 5)
 
     # 1D array[ actor1, actor2, ...., actorX]
-    netyearlyflow_i = revenues_i - opcost_i - opex_i
+    netyearlyflow_i = revenues_i - opcost_i - opex_i/y
     sumyearlyflow_i = np.zeros(len(netyearlyflow_i))
     for i in range(1, y + 1):
         sumyearlyflow_i += netyearlyflow_i / (1 + r_b) ** i  # 1D array
@@ -151,7 +152,7 @@ def BM(BM_input_dict):
 
     # sensitivity ananlysis for NPV
 
-    # from 1D array to row matrix[ actor1, actor2, ...., actorX]
+    # from 1D array to row matrix[ [actor1], [actor2], ...., [actorX]]
     netyearlyflow_i = netyearlyflow_i[np.newaxis]
 
     sumyearlyflow_i = np.zeros(netyearlyflow_i.size).reshape((-1, 1))  # column matrix
@@ -176,7 +177,7 @@ def BM(BM_input_dict):
     sumrevflow = 0
     sumdisflow = 0
     for i in range(1, y + 1):
-        sumrevflow += (opex_s + opcost_s + heat_cost_s) / (1 + r_b) ** i
+        sumrevflow += (opex_s/y + opcost_s + heat_cost_s) / (1 + r_b) ** i
         sumdisflow += dispatch_s / (1 + r_b) ** i
 
     LCOH_s = (capex_s + sumrevflow) / sumdisflow
@@ -203,7 +204,7 @@ def int_heat_rec(heat_rec_input_dict):
     r = heat_rec_input_dict["discount_rate"]
     rev = heat_rec_input_dict["money_sav"]
     c_q = heat_rec_input_dict["carbon_sav_quant"]
-    c_m = heat_rec_input_dict["carbon_sav_money"]
+ #   c_m = heat_rec_input_dict["carbon_sav_money"]
     n = heat_rec_input_dict["duration"]
 
     r_sen = np.linspace(r * 0.5, r * 1.5, 5)
@@ -218,7 +219,7 @@ def int_heat_rec(heat_rec_input_dict):
 
     # >>>>>>>>> NPV calculation
 
-    netyearlyflow = rev + c_m - of
+    netyearlyflow = rev - of  # c_m if provided would be used here
 
     sumyearlyflow = 0
     for i in range(1, n + 1):
