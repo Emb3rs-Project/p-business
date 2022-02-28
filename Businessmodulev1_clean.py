@@ -8,29 +8,37 @@ def BM(BM_input_dict):
     # --------------------------------------------------------------------------
     #                         Pre-proccessing / Data preparation START
     # ---------------------------------------------------------------------------
+    # input dictionary
+
+    Platform = BM_input_dict["Platform"]
+    MM = BM_input_dict["MM"]
+    TEO = BM_input_dict["TEO"]
+
+    GIS = BM_input_dict["GIS"]
+
     # input extraction from dictionary
 
     # MWh (per actor per hour for a whole year), int, 2D array
-    dispatch_ih = np.array(BM_input_dict["dispatch_ih"])
+    dispatch_ih = np.array(MM["dispatch_ih"])
     # EUR/MWh (per actor per hour for a whole year) float, 1D array
-    price_h = np.array(BM_input_dict["price_h"])
+    price_h = np.array(MM["price_h"])
     # EUR (per hour per actor for a whole year), float, 2D array
-    opcost_i = np.array(BM_input_dict["opcost_i"])
+    opcost_i = np.array(MM["opcost_i"])
     # OR if no op_cost is given; then
-    capex_tt = np.array(BM_input_dict["capex_tt"])  # EUR, int, 1D array
+    capex_tt = np.array(TEO["capex_tt"])  # EUR, int, 1D array
     # EUR/year, int, 1D array
-    opex_tt = np.array(BM_input_dict["opex_tt"])
-    projectduration = BM_input_dict["projectduration"]  # int
-    discountrate_i = np.array(BM_input_dict["discountrate_i"])
+    opex_tt = np.array(TEO["opex_tt"])
+    projectduration = Platform["projectduration"]  # int
+    discountrate_i = np.array(Platform["discountrate_i"])
     # important connects actors (first col) with different tech (second col)
-    rls = np.array(BM_input_dict["rls"], dtype=int)
-    s = np.array(BM_input_dict["sinks"], dtype=int)
-    capex_st = np.array(BM_input_dict["capex_st"])
-    capex_t_names = np.array(BM_input_dict["capex_t_names"])
-    capex_s_names = np.array(BM_input_dict["capex_s_names"])
-    sal_tt = np.array(BM_input_dict["sal_tt"])
-    sal_st = np.array(BM_input_dict["sal_st"])
-    net_cost = np.array(BM_input_dict["net_cost"])
+    rls = np.array(Platform["rls"], dtype=int)
+    s = np.array(Platform["sinks"], dtype=int)
+    capex_st = np.array(TEO["capex_st"])
+    capex_t_names = np.array(TEO["capex_t_names"])
+    capex_s_names = np.array(TEO["capex_s_names"])
+    sal_tt = np.array(TEO["sal_tt"])
+    sal_st = np.array(TEO["sal_st"])
+    net_cost = np.array(GIS["net_cost"])
 
     capex_t = np.concatenate((capex_tt, capex_st))
     sal_t = np.concatenate((sal_tt, sal_st))
