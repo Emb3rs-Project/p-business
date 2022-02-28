@@ -41,7 +41,7 @@ def test_bm():
         },
         "GIS" : {
             "net_cost": [100],
-        }
+        },
 
     }
   
