@@ -7,13 +7,15 @@ from ..Businessmodulev1_clean import BM
 # ---------------------------------------------------------------------------
 
 
-
-
 def test_bm():
-   BM_input_dict = {
+    BM_input_dict = {
         # MWh (per actor per hour for a whole year), int, 2D array
         "MM": {
-            "dispatch_ih": [[1, 2, 3, 4, 5], [10, 20, 30, 40, 50], [20, 30, 40, 50, 60]],
+            "dispatch_ih": [
+                [1, 2, 3, 4, 5],
+                [10, 20, 30, 40, 50],
+                [20, 30, 40, 50, 60],
+            ],
             # EUR/MWh (per actor per hour for a whole year) float, 1D array
             "price_h": [1, 2, 3, 4, 5],
             # EUR (per hour per actor for a whole year), float, 2D array
@@ -22,31 +24,25 @@ def test_bm():
         "TEO": {
             "capex_tt": [100, 200, 300, 400, 500, 600, 700],  # EUR, int, 1D array
             "opex_tt": [10, 20, 30, 40, 50, 60, 70],  # EUR total, int, 1D array
-
-            "capex_st" : [100, 200],
-            "capex_s_names" : ["s1", "s2"],
-            "capex_t_names" : ["100", "200", "300", "400", "500", "600", "700"],
-            "sal_tt" : [10, 20, 30, 40, 50, 60, 70],
-            "sal_st" : [10, 20],
-
+            "capex_st": [100, 200],
+            "capex_s_names": ["s1", "s2"],
+            "capex_t_names": ["100", "200", "300", "400", "500", "600", "700"],
+            "sal_tt": [10, 20, 30, 40, 50, 60, 70],
+            "sal_st": [10, 20],
         },
-
         # important connects actors (first col) with different techs (second col)
         "Platform": {
             "rls": [[0, 0], [0, 2], [1, 1], [1, 3], [1, 6], [2, 4], [2, 5]],
-            "sinks" : [0],
+            "sinks": [0],
             "projectduration": 5,
             "discountrate_i": [3, 5.5],
-            "co2_itensity" : 0,
+            "co2_itensity": 0,
         },
-        "GIS" : {
+        "GIS": {
             "net_cost": [100],
         },
-
     }
-  
 
     BM_output = BM(BM_input_dict)
 
     print(BM_output)
-
