@@ -206,14 +206,16 @@ def BM(BM_input_dict):
 
 
 def int_heat_rec(heat_rec_input_dict):
-    c = heat_rec_input_dict["capex"]
-    of = heat_rec_input_dict["O&M_fix"]
-    d = heat_rec_input_dict["energy_dispatch"]
-    r = heat_rec_input_dict["discount_rate"]
-    rev = heat_rec_input_dict["money_sav"]
-    c_q = heat_rec_input_dict["carbon_sav_quant"]
+    CF = heat_rec_input_dict["CF"]
+
+    c = CF["capex"]
+    of = CF["O&M_fix"]
+    d = CF["energy_dispatch"]
+    r = CF["discount_rate"]
+    rev = CF["money_sav"]
+    c_q = CF["carbon_sav_quant"]
  #   c_m = heat_rec_input_dict["carbon_sav_money"]
-    n = heat_rec_input_dict["duration"]
+    n = CF["duration"]
 
     r_sen = np.linspace(r * 0.5, r * 1.5, 5)
     # >>>>>>>>> LCOH calculation
