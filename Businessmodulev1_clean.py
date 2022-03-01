@@ -10,11 +10,11 @@ def BM(BM_input_dict):
     # ---------------------------------------------------------------------------
     # input dictionary
 
-    Platform = BM_input_dict["Platform"]
-    MM = BM_input_dict["MM"]
-    TEO = BM_input_dict["TEO"]
+    Platform = BM_input_dict["platform"]
+    MM = BM_input_dict["market-module"]
+    TEO = BM_input_dict["teo-module"]
 
-    GIS = BM_input_dict["GIS"]
+    GIS = BM_input_dict["gis-module"]
 
     # input extraction from dictionary
 
@@ -42,8 +42,8 @@ def BM(BM_input_dict):
 
     capex_t = np.concatenate((capex_tt, capex_st))
     sal_t = np.concatenate((sal_tt, sal_st))
-    
-    opex_t = np.pad(opex_tt, (0, np.size(capex_st)), 'constant')
+
+    opex_t = np.pad(opex_tt, (0, np.size(capex_st)), "constant")
 
     # capex & opex from tech to actors
 
@@ -78,7 +78,7 @@ def BM(BM_input_dict):
     # Operational cost
     # opcost_ih = co2taxtot_ih + fuelcost_ih #optional
     # total operational cost of actors in a year; 1D array
-    #opcost_i = np.sum(opcost_ih, axis=1)
+    # opcost_i = np.sum(opcost_ih, axis=1)
 
     # Revenues
     revenues_ih = dispatch_ih * price_h
@@ -146,7 +146,7 @@ def BM(BM_input_dict):
     r_sen_b = np.linspace(r_b * 0.5, r_b * 1.5, 5)
 
     # 1D array[ actor1, actor2, ...., actorX]
-    netyearlyflow_i = revenues_i - opcost_i - opex_i/y
+    netyearlyflow_i = revenues_i - opcost_i - opex_i / y
     sumyearlyflow_i = np.zeros(len(netyearlyflow_i))
     for i in range(1, y + 1):
         sumyearlyflow_i += netyearlyflow_i / (1 + r_b) ** i  # 1D array
@@ -185,7 +185,7 @@ def BM(BM_input_dict):
     sumrevflow = 0
     sumdisflow = 0
     for i in range(1, y + 1):
-        sumrevflow += (opex_s/y + opcost_s + heat_cost_s) / (1 + r_b) ** i
+        sumrevflow += (opex_s / y + opcost_s + heat_cost_s) / (1 + r_b) ** i
         sumdisflow += dispatch_s / (1 + r_b) ** i
 
     LCOH_s = (capex_s + sumrevflow) / sumdisflow
@@ -206,7 +206,7 @@ def BM(BM_input_dict):
 
 
 def int_heat_rec(heat_rec_input_dict):
-    CF = heat_rec_input_dict["CF"]
+    CF = heat_rec_input_dict["cf-module"]
 
     c = CF["capex"]
     of = CF["O&M_fix"]
@@ -214,7 +214,7 @@ def int_heat_rec(heat_rec_input_dict):
     r = CF["discount_rate"]
     rev = CF["money_sav"]
     c_q = CF["carbon_sav_quant"]
- #   c_m = heat_rec_input_dict["carbon_sav_money"]
+    #   c_m = heat_rec_input_dict["carbon_sav_money"]
     n = CF["duration"]
 
     r_sen = np.linspace(r * 0.5, r * 1.5, 5)

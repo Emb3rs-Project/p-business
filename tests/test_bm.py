@@ -31,7 +31,7 @@ def test_bm():
             "sal_st": [10, 20],
         },
         # important connects actors (first col) with different techs (second col)
-        "Platform": {
+        "platform": {
             "rls": [[0, 0], [0, 2], [1, 1], [1, 3], [1, 6], [2, 4], [2, 5]],
             "sinks": [0],
             "projectduration": 5,
