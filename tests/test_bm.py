@@ -10,7 +10,7 @@ from ..Businessmodulev1_clean import BM
 def test_bm():
     BM_input_dict = {
         # MWh (per actor per hour for a whole year), int, 2D array
-        "MM": {
+        "market-module": {
             "dispatch_ih": [
                 [1, 2, 3, 4, 5],
                 [10, 20, 30, 40, 50],
@@ -21,7 +21,7 @@ def test_bm():
             # EUR (per hour per actor for a whole year), float, 2D array
             "opcost_i": [2, 30, 40],
         },
-        "TEO": {
+        "teo-module": {
             "capex_tt": [100, 200, 300, 400, 500, 600, 700],  # EUR, int, 1D array
             "opex_tt": [10, 20, 30, 40, 50, 60, 70],  # EUR total, int, 1D array
             "capex_st": [100, 200],
@@ -38,7 +38,7 @@ def test_bm():
             "discountrate_i": [3, 5.5],
             "co2_itensity": 0,
         },
-        "GIS": {
+        "gis-module": {
             "net_cost": [100],
         },
     }
