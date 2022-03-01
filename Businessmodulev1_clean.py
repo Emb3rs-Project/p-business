@@ -191,7 +191,7 @@ def BM(BM_input_dict):
     LCOH_s = (capex_s + sumrevflow) / sumdisflow
 
     BM_output = {
-        "NPV_socio-economic": NPV_socio,
+        "NPV_socio-economic": NPV_socio.tolist(),
         "IRR_socio-economic": IRR_socio,
         "Sensitivity_NPV_socio-economic": NPV_socio_sen.tolist(),
         "NPV_comm_actor": NPV_i.tolist(),
