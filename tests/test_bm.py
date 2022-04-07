@@ -1,4 +1,4 @@
-from ..Businessmodulev1_clean import BM
+from Businessmodulev1_clean import BM
 
 # --------------------------------------------------------------------------
 #                         INPUTS START
@@ -32,7 +32,7 @@ def test_bm():
         },
         # important connects actors (first col) with different techs (second col)
         "platform": {
-            "rls": [[0, 0], [0, 2], [1, 1], [1, 3], [1, 6], [2, 4], [2, 5]],
+            "rls": [[0, 0], [0, 2], [1, 1], [1, 3], [1, 6], [2, 4], [2, 5], [2, 7], [2, 8]],
             "sinks": [0],
             "projectduration": 5,
             "discountrate_i": [3, 5.5],

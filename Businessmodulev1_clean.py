@@ -40,9 +40,51 @@ def BM(BM_input_dict):
     sal_st = np.array(TEO["sal_st"])
     net_cost = np.array(GIS["net_cost"])
 
+    # ----------------------------
+    # Error Check on inputs START
+    # -------------------------------
+
+    actors = opcost_i.size
+    row, col = dispatch_ih.shape
+    hours_yr = col
+
+    if discountrate_i[0] == 0 or discountrate_i[1] == 0:
+        raise Exception("Discount rate cannot be zero. Please provide valid values for discount rates. ")
+    if projectduration < 1:
+        raise Exception("Project lifetime cannot be zero. Please provide a valid value for project lifetime.")
+    row, col = dispatch_ih.shape
+    if row != actors:
+        raise Exception("Heat dispatch missing for one or more actors. Please provide heat dispatch for each actor.")
+    if col != hours_yr:
+        raise Exception(
+            "Heat dispatch missing for one or more hours. Please provide heat dispatch for each hour in a year.")
+    # this one moved to revenues
+    # print(price_h)
+    # row, col = price_h.shape
+    # if col != hours_yr:
+    #    raise Exception("Price missing for one or more hours. Please provide heat price for each hour in a year.")
+    if opcost_i.size != actors:
+        raise Exception("Operational cost missing for one or more actors.")
+    if capex_tt.size != opex_tt.size:
+        raise Exception("The capital costs or O&M cost missing for one or more technology.")
+    row, col = rls.shape
+    if row != capex_tt.size + capex_st.size:
+        raise Exception(
+            "The ownership structure is not defined correctly. All the technologies must belong to an actor.")
+    if s.size < 1:
+        raise Exception("There are no sinks in the simulation.")
+    if sal_tt.size != capex_tt.size:
+        raise Exception("The salvage costs are not defined for one or more technologies :: TEO input error.")
+    if sal_st.size != capex_st.size:
+        raise Exception("The salvage costs are not defined for one or more storage units:: TEO input error.")
+
+    # ----------------------------
+    # Error Check on inputs ENDS
+    # -------------------------------
+
+    # combining capex and salvage cost for tech and storages
     capex_t = np.concatenate((capex_tt, capex_st))
     sal_t = np.concatenate((sal_tt, sal_st))
-
     opex_t = np.pad(opex_tt, (0, np.size(capex_st)), "constant")
 
     # capex & opex from tech to actors
@@ -82,9 +124,23 @@ def BM(BM_input_dict):
 
     # Revenues
     revenues_ih = dispatch_ih * price_h
+
+    # ----------------------------
+    # Error Check on revinues starts
+    # -------------------------------
+    row, col = revenues_ih.shape
+    if col != hours_yr:
+        raise Exception("Price missing for one or more hours. The hourly price must be provided for each hour.")
+
+    # ----------------------------
+    # Error Check on revinues ends
+    # -------------------------------
+
+
     # total revenues of actors in a year; 1D array
     revenues_i = np.sum(revenues_ih, axis=1)
     dispatch_i = np.sum(dispatch_ih, axis=1)
+
     # seperating sink
     capex_s = capex_i[s]
     opex_s = opex_i[s]
