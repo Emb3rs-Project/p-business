@@ -1,4 +1,4 @@
-from Businessmodulev1_clean import BM
+from ..Businessmodulev1_clean import BM
 
 # --------------------------------------------------------------------------
 #                         INPUTS START
