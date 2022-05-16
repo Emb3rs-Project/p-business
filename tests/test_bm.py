@@ -12,7 +12,7 @@ def test_bm():
         # MWh (per actor per hour for a whole year), int, 2D array
         "market-module": {
             "dispatch_ih": [
-                [1, 2, 3, 4, 5],
+                [-1, -2, -3, -4, -5],
                 [10, 20, 30, 40, 50],
                 [20, 30, 40, 50, 60],
             ],

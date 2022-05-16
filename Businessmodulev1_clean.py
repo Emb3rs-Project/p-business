@@ -124,7 +124,7 @@ def BM(BM_input_dict):
     # opcost_i = np.sum(opcost_ih, axis=1)
 
     # Revenues
-    revenues_ih = dispatch_ih * price_h
+    revenues_ih = abs(dispatch_ih * price_h)
 
     # ----------------------------
     # Error Check on revinues starts
@@ -148,7 +148,7 @@ def BM(BM_input_dict):
     opex_s = opex_i[s]
     opcost_s = opcost_i[s]
     heat_cost_s = revenues_i[s]  # money spent by sink to buy heat
-    dispatch_s = dispatch_i[
+    dispatch_s = (-1) * dispatch_i[
         s
     ]  # make sure dispatch also take into account energy consumed by sink
     # seperating sources
