@@ -29,6 +29,7 @@ def BM(BM_input_dict):
     # EUR/year, int, 1D array
     opex_tt = np.array(TEO["opex_tt"])
     projectduration = Platform["projectduration"]  # int
+    actorshare = Platform["actorshare"]  # int
     discountrate_i = np.array(Platform["discountrate_i"])
     # important connects actors (first col) with different tech (second col)
     rls = np.array(Platform["rls"], dtype=int)
@@ -140,7 +141,8 @@ def BM(BM_input_dict):
     # total revenues of actors in a year; 1D array
     revenues_i = np.sum(revenues_ih, axis=1)
     dispatch_i = np.sum(dispatch_ih, axis=1)
-
+    # Adding share of network cost to each actors capex
+    capex_i = capex_i + (net_cost*actorshare)
     # seperating sink
     capex_s = capex_i[s]
     opex_s = opex_i[s]

@@ -36,6 +36,7 @@ def test_bm():
             "sinks": [0],
             "projectduration": 5,
             "discountrate_i": [3, 5.5],
+            "actorshare": [0, 0.50, 0.50],
             "co2_itensity": 0,
         },
         "gis-module": {
