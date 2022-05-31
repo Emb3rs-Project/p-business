@@ -1,7 +1,8 @@
 import numpy as np
+import mpld3
 import numpy_financial as npf
 import matplotlib.pyplot as plt
-
+from jinja2 import Environment, FileSystemLoader, PackageLoader, select_autoescape
 
 def BM(BM_input_dict):
 
@@ -41,49 +42,7 @@ def BM(BM_input_dict):
     sal_st = np.array(TEO["sal_st"])
     net_cost = np.array(GIS["net_cost"])
 
-    # ----------------------------
-    # Error Check on inputs START
-    # -------------------------------
-
-    actors = opcost_i.size
-    row, col = dispatch_ih.shape
-    hours_yr = col
-
-    if discountrate_i[0] == 0 or discountrate_i[1] == 0:
-        raise Exception("Discount rate cannot be zero. Please provide valid values for discount rates. ")
-    if projectduration < 1:
-        raise Exception("Project lifetime cannot be zero. Please provide a valid value for project lifetime.")
-    row, col = dispatch_ih.shape
-    if row != actors:
-        raise Exception("Heat dispatch missing for one or more actors. Please provide heat dispatch for each actor.")
-    if col != hours_yr:
-        raise Exception(
-            "Heat dispatch missing for one or more hours. Please provide heat dispatch for each hour in a year.")
-    # this one moved to revenues
-    # print(price_h)
-    # row, col = price_h.shape
-    # if col != hours_yr:
-    #    raise Exception("Price missing for one or more hours. Please provide heat price for each hour in a year.")
-    if opcost_i.size != actors:
-        raise Exception("Operational cost missing for one or more actors.")
-    if capex_tt.size != opex_tt.size:
-        raise Exception("The capital costs or O&M cost missing for one or more technology.")
-    row, col = rls.shape
-    if row != capex_tt.size + capex_st.size:
-        raise Exception(
-            "The ownership structure is not defined correctly. All the technologies must belong to an actor.")
-    if s.size < 1:
-        raise Exception("There are no sinks in the simulation.")
-    if sal_tt.size != capex_tt.size:
-        raise Exception("The salvage costs are not defined for one or more technologies :: TEO input error.")
-    if sal_st.size != capex_st.size:
-        raise Exception("The salvage costs are not defined for one or more storage units:: TEO input error.")
-
-    # ----------------------------
-    # Error Check on inputs ENDS
-    # -------------------------------
-
-    # combining capex and salvage cost for tech and storages
+# combining capex and salvage cost for tech and storages
     capex_t = np.concatenate((capex_tt, capex_st))
     sal_t = np.concatenate((sal_tt, sal_st))
     opex_t = np.pad(opex_tt, (0, np.size(capex_st)), "constant")
@@ -125,18 +84,6 @@ def BM(BM_input_dict):
 
     # Revenues
     revenues_ih = abs(dispatch_ih * price_h)
-
-    # ----------------------------
-    # Error Check on revinues starts
-    # -------------------------------
-    row, col = revenues_ih.shape
-    if col != hours_yr:
-        raise Exception("Price missing for one or more hours. The hourly price must be provided for each hour.")
-
-    # ----------------------------
-    # Error Check on revinues ends
-    # -------------------------------
-
 
     # total revenues of actors in a year; 1D array
     revenues_i = np.sum(revenues_ih, axis=1)
@@ -247,6 +194,47 @@ def BM(BM_input_dict):
         sumdisflow += dispatch_s / (1 + r_b) ** i
 
     LCOH_s = (capex_s + sumrevflow) / sumdisflow
+# ----------------------------------------------------------------
+#                     Polots & Reporting
+#----------------------------------------------------------------
+    fig1, ax = plt.subplots()
+    ax.plot(r_sen, NPV_socio_sen)
+    plt.ylabel('NPV')
+    plt.xlabel('Discount rate')
+    plt.title('NPV for Socio-economic Scenario')
+
+    fig2, ax = plt.subplots()
+    for i in range(0, netyearlyflow_i.size):
+        ax.plot(r_sen_b, NPV_sen_i[i, :], label="Actor %s" % i)
+    plt.legend(loc="upper left")
+    plt.ylabel('NPV')
+    plt.xlabel('Discount rate')
+    plt.title('NPV for Business Scenario')
+
+    fig3, ax = plt.subplots()
+    for i in range(0, s.size):
+        ax.plot(r_sen_b, NPV_sen_i[i, :], label="Sink %s" % i)
+    plt.ylabel('LCOH - €/kWh')
+    plt.xlabel('Discount rate')
+    plt.title('LCOH for Sinks')
+
+    fig1ht = mpld3.fig_to_html(fig1)
+    fig2ht = mpld3.fig_to_html(fig2)
+    fig3ht = mpld3.fig_to_html(fig3)
+
+    env = Environment(
+        loader=FileSystemLoader('asset'),
+        autoescape=False
+    )
+
+    template = env.get_template('BMtemplatev1.html')
+    template_content = template.render(plotNPVs=fig1ht, IRR_socio=np.around(IRR_socio, decimals=4), plotNPVb=fig2ht,
+                                       plotLCOH=fig3ht, IRR_i=np.around(IRR_i, decimals=4))
+
+    f = open("index.html", "w")
+    f.write(template_content)
+    f.close()
+    #plt.show()
 
     BM_output = {
         "NPV_socio-economic": NPV_socio.tolist(),
@@ -258,6 +246,7 @@ def BM(BM_input_dict):
         "Discountrate_socio": r_sen.tolist(),
         "Discountrate_business": r_sen_b.tolist(),
         "LCOH_s": LCOH_s.tolist(),
+        "report":template_content,
     }
 
     return BM_output
