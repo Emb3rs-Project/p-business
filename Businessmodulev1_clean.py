@@ -201,7 +201,7 @@ def BM(BM_input_dict):
     ax.plot(r_sen, NPV_socio_sen)
     plt.ylabel('NPV')
     plt.xlabel('Discount rate')
-    plt.title('NPV for Socio-economic Scenario')
+    #plt.title('NPV for Socio-economic Scenario')
 
     fig2, ax = plt.subplots()
     for i in range(0, netyearlyflow_i.size):
@@ -209,14 +209,14 @@ def BM(BM_input_dict):
     plt.legend(loc="upper left")
     plt.ylabel('NPV')
     plt.xlabel('Discount rate')
-    plt.title('NPV for Business Scenario')
+    #plt.title('NPV for Business Scenario')
 
     fig3, ax = plt.subplots()
     for i in range(0, s.size):
         ax.plot(r_sen_b, NPV_sen_i[i, :], label="Sink %s" % i)
     plt.ylabel('LCOH - €/kWh')
     plt.xlabel('Discount rate')
-    plt.title('LCOH for Sinks')
+    #plt.title('LCOH for Sinks')
 
     fig1ht = mpld3.fig_to_html(fig1)
     fig2ht = mpld3.fig_to_html(fig2)
@@ -284,8 +284,40 @@ def int_heat_rec(heat_rec_input_dict):
 
     NPV = sumyearlyflow - c
 
+
+#---------------------------------------------------------
+#       Plotting and reporting
+#------------------------------------------------------
+
+    fig1, ax = plt.subplots()
+    ax.plot(r_sen, NPV)
+    plt.ylabel('NPV')
+    plt.xlabel('Discount rate')
+
+    fig2, ax = plt.subplots()
+    ax.plot(r_sen, LCOH)
+    plt.ylabel('LCOH - €/kWh')
+    plt.xlabel('Discount rate')
+
+    fig1ht = mpld3.fig_to_html(fig1)
+    fig2ht = mpld3.fig_to_html(fig2)
+
+    env = Environment(
+        loader=FileSystemLoader('asset'),
+        autoescape=False
+    )
+
+    template = env.get_template('intheattemplatev1.html')
+    template_content = template.render(plotNPVs=fig1ht, plotLCOH=fig2ht)
+
+    f = open("index2.html", "w")
+    f.write(template_content)
+    f.close()
+
+
+
     # >>> Output dictionary
 
-    heat_rec_output_dict = {"LCOH_sen": LCOH.tolist(), "NPV_sen": NPV.tolist()}
+    heat_rec_output_dict = {"LCOH_sen": LCOH.tolist(), "NPV_sen": NPV.tolist(), "report": template_content}
 
     return heat_rec_output_dict
