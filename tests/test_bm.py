@@ -46,4 +46,5 @@ def test_bm():
 
     BM_output = BM(BM_input_dict)
 
-    print(BM_output)
+    #print(BM_output)
+
