@@ -1,4 +1,7 @@
 import numpy as np
+import json
+import re
+import pandas as pd
 import mpld3
 import numpy_financial as npf
 import matplotlib.pyplot as plt
@@ -6,7 +9,7 @@ from jinja2 import Environment, FileSystemLoader, PackageLoader, select_autoesca
 from pydantic import BaseModel, ValidationError, validator
 from cases.exceptions.module_validation_exception import ModuleValidationException
 
-
+"""
 class TestInput(BaseModel):  # STRUCTURE VALIDATION
 # platform inputs
     projectduration: int
@@ -98,107 +101,198 @@ class TestInput(BaseModel):  # STRUCTURE VALIDATION
             raise ValueError("Storages Capex and their salvage costs must be defined for each technology.")
         return v
 ### Error handling ends
+"""
 
 def BM(BM_input_dict):
 
     # --------------------------------------------------------------------------
     #                         Pre-proccessing / Data preparation START
     # ---------------------------------------------------------------------------
+
     # input dictionary
-
     Platform = BM_input_dict["platform"]
-    MM = BM_input_dict["market-module"]
-    TEO = BM_input_dict["teo-module"]
-
+    market = BM_input_dict["market-module"]
+    teo= BM_input_dict["teo-module"]
     GIS = BM_input_dict["gis-module"]
 
-    # input extraction from dictionary
-
-    # MWh (per actor per hour for a whole year), int, 2D array
-    dispatch_ih = np.array(MM["dispatch_ih"])
-    # EUR/MWh (per actor per hour for a whole year) float, 1D array
-    price_h = np.array(MM["price_h"])
-    # EUR (per hour per actor for a whole year), float, 2D array
-    opcost_i = np.array(MM["opcost_i"])
-    # OR if no op_cost is given; then
-    capex_tt = np.array(TEO["capex_tt"])  # EUR, int, 1D array
-    # EUR/year, int, 1D array
-    opex_tt = np.array(TEO["opex_tt"])
+    # input extraction from dictionaries
     projectduration = Platform["projectduration"]  # int
     actorshare = Platform["actorshare"]  # int
     discountrate_i = np.array(Platform["discountrate_i"])
     # important connects actors (first col) with different tech (second col)
-    rls = np.array(Platform["rls"], dtype=int)
-    s = np.array(Platform["sinks"], dtype=int)
-    capex_st = np.array(TEO["capex_st"])
-    capex_t_names = np.array(TEO["capex_t_names"])
-    capex_s_names = np.array(TEO["capex_s_names"])
-    sal_tt = np.array(TEO["sal_tt"])
-    sal_st = np.array(TEO["sal_st"])
+    rls = Platform["rls"]
     net_cost = np.array(GIS["net_cost"])
 
+    ### input extraction from MM (dict is market)
+    Pn = market["Pn"]
+    op_cost = market["agent_operational_cost"]
+    price_h = np.array(market["shadow_price"])
+
+    ### input extraction from TEO (dict is teo)
+    incoming = teo["DiscountedCapitalInvestmentByTechnology"]
+    capex_t_names = [d['TECHNOLOGY'] for d in incoming]
+    capex_t_values = [d['VALUE'] for d in incoming]
+
+    incoming = teo["DiscountedCapitalInvestmentByStorage"]
+    capex_s_names = [d['STORAGE'] for d in incoming]
+    capex_s_values = [d['VALUE'] for d in incoming]
+
+    incoming = teo["DiscountedSalvageValueByTechnology"]
+    sal_t_values = [d['VALUE'] for d in incoming]
+
+    incoming = teo["DiscountedSalvageValueByStorage"]
+    sal_s_values = [d['VALUE'] for d in incoming]
+
+    incoming = teo["TotalDiscountedFixedOperatingCost"]
+    opex_values = [d['VALUE'] for d in incoming]
+
+    capex_names = np.concatenate((capex_t_names, capex_s_names))
+    capex_values = np.concatenate((capex_t_values, capex_s_values))
+    sal_values = np.concatenate((sal_t_values, sal_s_values))
+    opex_values = np.concatenate((sal_t_values, [0] * len(capex_s_names)))
+
+    ####################################################3
+
+
 # Input Error check - Error handling ---- Starts---
-    _indict = { **Platform, **MM, **TEO}
-    try:
-        _model = TestInput(**_indict)
+#    _indict = { **Platform, **MM, **TEO}
+#    try:
+#        _model = TestInput(**_indict)
 
     # print(_model.schema_json(indent=2))
 
-    except ValidationError as e:
-        raise ModuleValidationException(code=1, msg="Problem with Business module", error=e)
+#    except ValidationError as e:
+#        raise ModuleValidationException(code=1, msg="Problem with Business module", error=e)
     #except Exception as e:
     #    print(e)
 
 # Input Error check - Error handling ---- Ends---
 
-# combining capex and salvage cost for tech and storages
-    capex_t = np.concatenate((capex_tt, capex_st))
-    sal_t = np.concatenate((sal_tt, sal_st))
-    opex_t = np.pad(opex_tt, (0, np.size(capex_st)), "constant")
+####################################################3
 
-    # capex & opex from tech to actors
+####################################################3
 
-    i = np.copy(rls)
-    temp = capex_t[i[:, 1]]
-    i[:, 1] = temp
-    temp_i = np.zeros((np.max(i, axis=0)[0] + 1, np.shape(i)[1]))
-    temp_i[0 : np.max(i, axis=0)[0] + 1, 0] = [
-        np.sum(i[i[:, 0] == j, 1]) for j in range(np.max(i, axis=0)[0] + 1)
-    ]
-    capex_i = temp_i[0 : np.max(i, axis=0)[0] + 1][:, 0]
+    mm_agents = []
+    dispatch_ih = np.zeros(shape=(len(Pn), 8760))
+    op_cost_i = []
+    count = 0
+    for i in Pn.keys():
+        dispatch_ih[count] = Pn[i]
 
-    i = np.copy(rls)
-    temp = sal_t[i[:, 1]]
-    i[:, 1] = temp
-    temp_i = np.zeros((np.max(i, axis=0)[0] + 1, np.shape(i)[1]))
-    temp_i[0 : np.max(i, axis=0)[0] + 1, 0] = [
-        np.sum(i[i[:, 0] == j, 1]) for j in range(np.max(i, axis=0)[0] + 1)
-    ]
-    sal_i = temp_i[0 : np.max(i, axis=0)[0] + 1][:, 0]
+        opp = np.array(op_cost[i])
+        op_cost_i.append(sum(opp))
+
+        mm_agents.append(i)
+        count = count + 1
+
+    ## combining everything at source and sink resolution for MM
+
+    mm_agents_copy = mm_agents
+    mm_agents_fil = []
+    for i in mm_agents_copy:
+        if i.find("grid") >= 0:
+            tech = "grid"
+        elif i.find("sou") >= 0:
+            dig = re.findall("sou\B([0-9]+)", i)
+            tech = "source" + dig[0]
+
+
+        elif i.find("sink") >= 0:
+            dig = re.findall("sink\B([0-9]+)", i)
+            tech = "sink" + dig[0]
+
+        mm_agents_fil.append(tech)
+
+    total_dispatch_mi = np.sum(dispatch_ih, axis=1)
+    revenues_mi = abs(dispatch_ih * price_h)
+    total_revenues_mi = np.sum(revenues_mi, axis=1)
+
+    data_df_m = {
+        "agent_m": mm_agents_fil,
+        "total_dispatch": total_dispatch_mi.tolist(),
+        "total_rev": total_revenues_mi.tolist(),
+        "op_cost_i": op_cost_i
+    }
+
+    mdf = pd.DataFrame(data_df_m)
+    mdf_uniq = mdf.groupby('agent_m').sum()
+
+    ## combining everything at source and sink resolution for TEO
+
+    teo_agents_copy = capex_names
+    teo_agents_fil = []
+    for i in teo_agents_copy:
+        if i.find("grid") >= 0:
+            tech = "grid"
+        elif i.find("storage") >= 0:
+            tech = "grid"
+        elif i.find("sou") >= 0:
+            dig = re.findall("sou\B([0-9]+)", i)
+            tech = "source" + dig[0]
+        elif i.find("sink") >= 0:
+            dig = re.findall("sink\B([0-9]+)", i)
+            tech = "sink" + dig[0]
+
+        teo_agents_fil.append(tech)
+
+    data_df_teo = {
+        "agent_teo": teo_agents_fil,
+        "capex_values": capex_values,
+        "sal_values": sal_values,
+        "opex": opex_values
+    }
+
+    teodf = pd.DataFrame(data_df_teo)
+    teodf_uniq = teodf.groupby('agent_teo').sum()
+
+    # taking out grid part
+    mdf_uniq = mdf_uniq.iloc[1:]
+
+    grid = teodf_uniq.iloc[0]
+    teodf_uniq = teodf_uniq.iloc[1:]
+
+    ######### rls operation
+    mdf_uniq["owner"] = " "
+    teodf_uniq["owner"] = " "
+    mdf_uniq['agent_market'] = mdf_uniq.index
+    teodf_uniq['agent_techno'] = teodf_uniq.index
+
+    for i in rls:
+        actor = i[0]
+        tech_temp = i[1]
+        tt = tech_temp.split()
+        tech_real = tt[0] + tt[1]
+        mdf_uniq.loc[mdf_uniq.index[mdf_uniq["agent_market"] == tech_real], "owner"] = actor
+        teodf_uniq.loc[teodf_uniq.index[teodf_uniq["agent_techno"] == tech_real], "owner"] = actor
+
+    mdf_uniq = mdf_uniq.groupby("owner").sum()
+    teodf_uniq = teodf_uniq.groupby("owner").sum()
+
+    mdf_uniq['owner2'] = mdf_uniq.index
+    teodf_uniq['owner2'] = teodf_uniq.index
+
+    ##### getting final parameters
+
+    capex_i = teodf_uniq["capex_values"].to_numpy()
+    sal_i = teodf_uniq["sal_values"].to_numpy()
     capex_i = capex_i - sal_i
+    opex_i = teodf_uniq["opex"].to_numpy()
+    actors_i = teodf_uniq.index
 
-    i = np.copy(rls)
-    temp = opex_t[i[:, 1]]
-    i[:, 1] = temp
-    temp_i = np.zeros((np.max(i, axis=0)[0] + 1, np.shape(i)[1]))
-    temp_i[0 : np.max(i, axis=0)[0] + 1, 0] = [
-        np.sum(i[i[:, 0] == j, 1]) for j in range(np.max(i, axis=0)[0] + 1)
-    ]
-    opex_i = temp_i[0 : np.max(i, axis=0)[0] + 1][:, 0]
+    s = []
+    count = 0
+    for i in actors_i:
 
-    # Operational cost
-    # opcost_ih = co2taxtot_ih + fuelcost_ih #optional
-    # total operational cost of actors in a year; 1D array
-    # opcost_i = np.sum(opcost_ih, axis=1)
+        if i.find("sink") >= 0:
+            s.append(count)
+        count = count + 1
 
-    # Revenues
-    revenues_ih = abs(dispatch_ih * price_h)
+    dispatch_i = mdf_uniq["total_dispatch"].to_numpy()
+    revenues_i = mdf_uniq["total_rev"].to_numpy()
+    op_cost_i = mdf_uniq["op_cost_i"].to_numpy()
 
-    # total revenues of actors in a year; 1D array
-    revenues_i = np.sum(revenues_ih, axis=1)
-    dispatch_i = np.sum(dispatch_ih, axis=1)
     # Adding share of network cost to each actors capex
-    capex_i = capex_i + (net_cost*actorshare)
+    capex_i = capex_i + ( (net_cost + grid["capex_values"] - grid["sal_values"])*actorshare)
     # seperating sink
     capex_s = capex_i[s]
     opex_s = opex_i[s]
@@ -221,9 +315,9 @@ def BM(BM_input_dict):
     #                         business mode conditional statement START
     # ---------------------------------------------------------------------------
     # if socio-economic (maybe not coz gonna calculate both scenario)
-    capex = np.sum(capex_i) + np.sum(capex_s) + net_cost
-    opex = np.sum(opex_i) + np.sum(opex_s)
-    revenues = np.sum(revenues_i) + np.sum(heat_cost_s)
+    capex = np.sum(capex_i) + np.sum(capex_s)
+    opex = np.sum(opex_i) + np.sum(opex_s) + grid["opex"]
+    revenues = np.sum(revenues_i) - np.sum(heat_cost_s)
     op_cost = np.sum(opcost_i) + np.sum(opcost_s)
     r = discountrate_i[0]
 
@@ -314,7 +408,7 @@ def BM(BM_input_dict):
 
     fig2, ax = plt.subplots()
     for i in range(0, netyearlyflow_i.size):
-        ax.plot(r_sen_b, NPV_sen_i[i, :], label="Actor %s" % i)
+        ax.plot(r_sen_b, NPV_sen_i[i, :], label="Actor %s" % actors_i[i])
     plt.legend(loc="upper left")
     plt.ylabel('NPV')
     plt.xlabel('Discount rate')
@@ -322,7 +416,7 @@ def BM(BM_input_dict):
 
     fig3, ax = plt.subplots()
     for i in range(0, s.size):
-        ax.plot(r_sen_b, NPV_sen_i[i, :], label="Sink %s" % i)
+        ax.plot(r_sen_b, NPV_sen_i[i, :], label="sink %s" % i)
     plt.ylabel('LCOH - €/kWh')
     plt.xlabel('Discount rate')
     #plt.title('LCOH for Sinks')
