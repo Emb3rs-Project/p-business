@@ -7,7 +7,7 @@ import numpy_financial as npf
 import matplotlib.pyplot as plt
 from jinja2 import Environment, FileSystemLoader, PackageLoader, select_autoescape
 from pydantic import BaseModel, ValidationError, validator
-from cases.exceptions.module_validation_exception import ModuleValidationException
+from .cases.exceptions.module_validation_exception import ModuleValidationException
 
 """
 class TestInput(BaseModel):  # STRUCTURE VALIDATION
@@ -289,7 +289,7 @@ def BM(BM_input_dict):
 
     dispatch_i = mdf_uniq["total_dispatch"].to_numpy()
     revenues_i = mdf_uniq["total_rev"].to_numpy()
-    op_cost_i = mdf_uniq["op_cost_i"].to_numpy()
+    opcost_i = mdf_uniq["op_cost_i"].to_numpy()
 
     # Adding share of network cost to each actors capex
     capex_i = capex_i + ( (net_cost + grid["capex_values"] - grid["sal_values"])*actorshare)
