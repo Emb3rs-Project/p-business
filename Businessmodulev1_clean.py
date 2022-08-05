@@ -195,11 +195,11 @@ def BM(BM_input_dict):
         elif i.find("sou") >= 0:
             dig = re.findall("sou\B([0-9]+)", i)
             tech = "source" + dig[0]
-
-
         elif i.find("sink") >= 0:
             dig = re.findall("sink\B([0-9]+)", i)
             tech = "sink" + dig[0]
+        else:
+            tech = "grid"
 
         mm_agents_fil.append(tech)
 
