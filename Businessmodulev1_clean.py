@@ -425,14 +425,18 @@ def BM(BM_input_dict):
     fig2ht = mpld3.fig_to_html(fig2)
     fig3ht = mpld3.fig_to_html(fig3)
 
+    import os
+    script_dir = os.path.dirname(__file__)
+
     env = Environment(
-        loader=FileSystemLoader('asset'),
+        loader=FileSystemLoader(os.path.join(script_dir, "asset")),
         autoescape=False
     )
 
     template = env.get_template('BMtemplatev1.html')
     template_content = template.render(plotNPVs=fig1ht, IRR_socio=np.around(IRR_socio, decimals=4), plotNPVb=fig2ht,
                                        plotLCOH=fig3ht, IRR_i=np.around(IRR_i, decimals=4))
+
 
     f = open("index.html", "w")
     f.write(template_content)
