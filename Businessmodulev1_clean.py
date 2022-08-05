@@ -292,7 +292,7 @@ def BM(BM_input_dict):
     opcost_i = mdf_uniq["op_cost_i"].to_numpy()
 
     # Adding share of network cost to each actors capex
-    capex_i = capex_i + ( (net_cost + grid["capex_values"] - grid["sal_values"])*actorshare)
+    capex_i = capex_i + ( (net_cost + grid["capex_values"] - grid["sal_values"])*np.array(actorshare))
     # seperating sink
     capex_s = capex_i[s]
     opex_s = opex_i[s]
@@ -415,8 +415,8 @@ def BM(BM_input_dict):
     #plt.title('NPV for Business Scenario')
 
     fig3, ax = plt.subplots()
-    for i in range(0, s.size):
-        ax.plot(r_sen_b, NPV_sen_i[i, :], label="sink %s" % i)
+    for i in range(0, netyearlyflow_i.size):
+        ax.plot(r_sen_b, NPV_sen_i[i, :], label="Actor %s" % actors_i[i])
     plt.ylabel('LCOH - €/kWh')
     plt.xlabel('Discount rate')
     #plt.title('LCOH for Sinks')
