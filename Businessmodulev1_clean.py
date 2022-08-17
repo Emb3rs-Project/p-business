@@ -1,13 +1,16 @@
-import numpy as np
-import json
+# import json
 import re
-import pandas as pd
-import mpld3
-import numpy_financial as npf
+from typing import Dict
+
 import matplotlib.pyplot as plt
-from jinja2 import Environment, FileSystemLoader, PackageLoader, select_autoescape
-from pydantic import BaseModel, ValidationError, validator
-from .cases.exceptions.module_validation_exception import ModuleValidationException
+import mpld3
+import numpy as np
+import numpy_financial as npf
+import pandas as pd
+from jinja2 import Environment, FileSystemLoader  #, PackageLoader, select_autoescape
+# from pydantic import BaseModel, ValidationError, validator
+
+# from .cases.exceptions.module_validation_exception import ModuleValidationException
 
 """
 class TestInput(BaseModel):  # STRUCTURE VALIDATION
@@ -103,17 +106,17 @@ class TestInput(BaseModel):  # STRUCTURE VALIDATION
 ### Error handling ends
 """
 
-def BM(BM_input_dict):
 
+def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     # --------------------------------------------------------------------------
     #                         Pre-proccessing / Data preparation START
     # ---------------------------------------------------------------------------
 
     # input dictionary
-    Platform = BM_input_dict["platform"]
-    market = BM_input_dict["market-module"]
-    teo= BM_input_dict["teo-module"]
-    GIS = BM_input_dict["gis-module"]
+    Platform = input_dict["platform"]
+    market = input_dict["market-module"]
+    teo = input_dict["teo-module"]
+    GIS = input_dict["gis-module"]
 
     # input extraction from dictionaries
     projectduration = Platform["projectduration"]  # int
@@ -438,12 +441,13 @@ def BM(BM_input_dict):
                                        plotLCOH=fig3ht, IRR_i=np.around(IRR_i, decimals=4))
 
 
-    f = open("index.html", "w")
-    f.write(template_content)
-    f.close()
+    if generate_template:
+        f = open("index.html", "w")
+        f.write(template_content)
+        f.close()
     #plt.show()
 
-    BM_output = {
+    output = {
         "NPV_socio-economic": NPV_socio.tolist(),
         "IRR_socio-economic": IRR_socio,
         "Sensitivity_NPV_socio-economic": NPV_socio_sen.tolist(),
@@ -453,10 +457,9 @@ def BM(BM_input_dict):
         "Discountrate_socio": r_sen.tolist(),
         "Discountrate_business": r_sen_b.tolist(),
         "LCOH_s": LCOH_s.tolist(),
-        "report":template_content,
+        "report": template_content,
     }
-
-    return BM_output
+    return output
 
 
 def int_heat_rec(heat_rec_input_dict):
