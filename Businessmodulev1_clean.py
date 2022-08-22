@@ -201,8 +201,8 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
         elif i.find("sink") >= 0:
             dig = re.findall("sink\B([0-9]+)", i)
             tech = "sink" + dig[0]
-        else:
-            tech = "grid"
+        elif i.find("dhn") >= 0:
+            tech = "dhn"
 
         mm_agents_fil.append(tech)
 
@@ -218,6 +218,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     }
 
     mdf = pd.DataFrame(data_df_m)
+    mdf = mdf[(mdf.agent_m != "dhn")]
     mdf_uniq = mdf.groupby('agent_m').sum()
 
     ## combining everything at source and sink resolution for TEO
@@ -283,11 +284,16 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     actors_i = teodf_uniq.index
 
     s = []
+    s_names = []
+    actor_names = []
     count = 0
     for i in actors_i:
 
         if i.find("sink") >= 0:
             s.append(count)
+            s_names.append(i)
+        else:
+            actor_names.append(i)
         count = count + 1
 
     dispatch_i = mdf_uniq["total_dispatch"].to_numpy()
@@ -393,14 +399,20 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     NPV_sen_i = sumyearlyflow_i - capex_i  # 2D matrix
 
     # >>>>>>>>> LCOH calculation
-    sumrevflow = 0
-    sumdisflow = 0
-    for i in range(1, y + 1):
-        sumrevflow += (opex_s / y + opcost_s + heat_cost_s) / (1 + r_b) ** i
-        sumdisflow += dispatch_s / (1 + r_b) ** i
+    LCOH_sen = np.zeros((opex_s.size, 1))  # column matrix
+    for j in range(0, r_sen_b.size):
+        sumrevflow = 0
+        sumdisflow = 0
+        for i in range(1, y + 1):
+            sumrevflow += (opex_s / y + opcost_s + heat_cost_s) / (1 + r_sen_b[j]) ** i
+            sumdisflow += dispatch_s / (1 + r_sen_b[j]) ** i
+        LCOH_s = (capex_s + sumrevflow) / sumdisflow
+        LCOH_s = LCOH_s.reshape((-1, 1))
+        LCOH_sen = np.append(LCOH_sen, LCOH_s, axis=1)
 
-    LCOH_s = (capex_s + sumrevflow) / sumdisflow
-# ----------------------------------------------------------------
+    LCOH_sen = np.delete(LCOH_sen, 0, 1)
+
+    # ----------------------------------------------------------------
 #                     Polots & Reporting
 #----------------------------------------------------------------
     fig1, ax = plt.subplots()
@@ -411,15 +423,16 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     fig2, ax = plt.subplots()
     for i in range(0, netyearlyflow_i.size):
-        ax.plot(r_sen_b, NPV_sen_i[i, :], label="Actor %s" % actors_i[i])
+        ax.plot(r_sen_b, NPV_sen_i[i, :], label="Actor %s" % actor_names[i])
     plt.legend(loc="upper left")
     plt.ylabel('NPV')
     plt.xlabel('Discount rate')
     #plt.title('NPV for Business Scenario')
 
     fig3, ax = plt.subplots()
-    for i in range(0, netyearlyflow_i.size):
-        ax.plot(r_sen_b, NPV_sen_i[i, :], label="Actor %s" % actors_i[i])
+    for i in range(0, opex_s.size):
+        ax.plot(r_sen_b, LCOH_sen[i, :], label="Actor %s" % s_names[i])
+    plt.legend(loc="upper left")
     plt.ylabel('LCOH - €/kWh')
     plt.xlabel('Discount rate')
     #plt.title('LCOH for Sinks')
