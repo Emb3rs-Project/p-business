@@ -262,12 +262,24 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     teodf_uniq['agent_techno'] = teodf_uniq.index
 
     for i in rls:
-        actor = i[0]
+        actor = i[0].replace(" ", "")
         tech_temp = i[1]
         tt = tech_temp.split()
         tech_real = tt[0] + tt[1]
         mdf_uniq.loc[mdf_uniq.index[mdf_uniq["agent_market"] == tech_real], "owner"] = actor
         teodf_uniq.loc[teodf_uniq.index[teodf_uniq["agent_techno"] == tech_real], "owner"] = actor
+
+    mdf_uniq = mdf_uniq.reset_index(drop=True)
+    teodf_uniq = teodf_uniq.reset_index(drop=True)
+    lis1 = mdf_uniq["owner"].tolist()
+    lis2 = mdf_uniq["agent_market"].tolist()
+    lis = list(set(lis2).difference(lis1))
+    for i in lis:
+        mdf_uniq.loc[len(mdf_uniq), "owner"] = i
+        teodf_uniq.loc[len(teodf_uniq), "owner"] = i
+
+    mdf_uniq = mdf_uniq.fillna(0)
+    teodf_uniq = teodf_uniq.fillna(0)
 
     mdf_uniq = mdf_uniq.groupby("owner").sum()
     teodf_uniq = teodf_uniq.groupby("owner").sum()
