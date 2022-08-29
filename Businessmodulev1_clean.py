@@ -147,12 +147,12 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     sal_s_values = [d['VALUE'] for d in incoming]
 
     incoming = teo["TotalDiscountedFixedOperatingCost"]
-    opex_values = [d['VALUE'] for d in incoming]
+    opex_t_values = [d['VALUE'] for d in incoming]
 
     capex_names = np.concatenate((capex_t_names, capex_s_names))
     capex_values = np.concatenate((capex_t_values, capex_s_values))
     sal_values = np.concatenate((sal_t_values, sal_s_values))
-    opex_values = np.concatenate((sal_t_values, [0] * len(capex_s_names)))
+    opex_values = np.concatenate((opex_t_values, [0] * len(capex_s_names)))
 
     ####################################################3
 
@@ -354,7 +354,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
         sumyearlyflow += netyearlyflow / (1 + r) ** i
 
     NPV_socio = sumyearlyflow - capex - opex
-
+    PayBack_socio = (capex + opex + (op_cost * y)) / (revenues * y)
     sumyearlyflow = 0
     for i in range(1, y + 1):
         sumyearlyflow += netyearlyflow / (1 + r_sen) ** i
@@ -387,6 +387,14 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     for i in range(0, netyearlyflow_i.size):
         IRR_i[i] = npf.irr(np.append(-capex_i[i], np.full(y, netyearlyflow_i[i])))
 
+    # Payback period for each actor
+
+    rev_new = revenues_i
+    for i in range(0, rev_new.size):
+        if rev_new[i] == 0:
+            rev_new[i] = float("nan")
+    PayBack_i = (capex_i + opex_i + (opcost_i * y)) / (rev_new * y)
+
     # sensitivity ananlysis for NPV
 
     # from 1D array to row matrix[ [actor1], [actor2], ...., [actorX]]
@@ -418,6 +426,9 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
         for i in range(1, y + 1):
             sumrevflow += (opex_s / y + opcost_s + heat_cost_s) / (1 + r_sen_b[j]) ** i
             sumdisflow += dispatch_s / (1 + r_sen_b[j]) ** i
+        for k in range(0, sumdisflow.size):
+            if sumdisflow[k] == 0:
+                sumdisflow[k] = float("nan")
         LCOH_s = (capex_s + sumrevflow) / sumdisflow
         LCOH_s = LCOH_s.reshape((-1, 1))
         LCOH_sen = np.append(LCOH_sen, LCOH_s, axis=1)
@@ -463,8 +474,9 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     template = env.get_template('BMtemplatev1.html')
     template_content = template.render(plotNPVs=fig1ht, IRR_socio=np.around(IRR_socio, decimals=4), plotNPVb=fig2ht,
-                                       plotLCOH=fig3ht, IRR_i=np.around(IRR_i, decimals=4))
-
+                                       plotLCOH=fig3ht, actor_names=actor_names, IRR_i=np.around(IRR_i, decimals=4),
+                                       Payback_socio=np.around(PayBack_socio, decimals=4),
+                                       Payback_actors=np.around(PayBack_i, decimals=4))
 
     if generate_template:
         f = open("index.html", "w")
@@ -482,6 +494,8 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
         "Discountrate_socio": r_sen.tolist(),
         "Discountrate_business": r_sen_b.tolist(),
         "LCOH_s": LCOH_s.tolist(),
+        "Payback_socio": PayBack_socio.tolist(),
+        "Payback_actors": PayBack_i.tolist(),
         "report": template_content,
     }
     return output

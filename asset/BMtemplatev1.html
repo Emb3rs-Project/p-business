@@ -26,7 +26,7 @@
   <!-- Change after this -->
   
  <h1>Business module output</h1>
-</p> This report contains results for the financial feasibility of given excess heat and cold project. The report includes Net Present Value, Internal Rate of Return, and Levelised Cost of Heat. </p>
+</p> This report contains results for the financial feasibility of given excess heat and cold project. The report includes Net Present Value, Internal Rate of Return, Payback period, and Levelised Cost of Heat. </p>
 <h2>Net Present Value</h2>
 
 <div>
@@ -43,13 +43,13 @@
 
 <h2>Internal Rate of Return</h2>
 <div>
-  <p>The Internal Rate of Return(IRR) for socio-economic scenario is <b> {{IRR_socio}} </b>. The IRR values for each actor under the private business scenario are shown in the table below:</p>
+  <p>The Internal Rate of Return(IRR) for socio-economic scenario is <b> {{IRR_socio}} </b>%. The IRR values for each actor under the private business scenario are shown in the table below:</p>
     
       <table class="table table-bordered">
         <thead>
           <tr>
             <th scope="col">Actor's name</th>
-            <th scope="col">IRR</th>
+            <th scope="col">IRR %</th>
             
           </tr>
         </thead>
@@ -64,6 +64,31 @@
         </tbody>
       </table>
 </div>
+
+<h2>Payback Period</h2>
+<div>
+  <p>The Payback period for socio-economic scenario is <b> {{Payback_socio}} </b> years. The Payback period for each actor under the private business scenario are shown in the table below:</p>
+    
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th scope="col">Actor's name</th>
+            <th scope="col">Payback period- years</th>
+            
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in Payback_actors %}
+          <tr>
+            <td> {{actor_names[loop.index-1]}} </td>
+			<td>{{Payback_actors[loop.index - 1]}} </td>
+                     
+          </tr>
+		   {% endfor %}
+        </tbody>
+      </table>
+</div>
+
 
 <h2>Levelised Cost of Heat for Sinks</h2>
 <div>
