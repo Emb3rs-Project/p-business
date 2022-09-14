@@ -4,37 +4,33 @@ from typing import Dict
 
 import matplotlib.pyplot as plt
 import mpld3
+import numpy
 import numpy as np
 import numpy_financial as npf
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader  #, PackageLoader, select_autoescape
-# from pydantic import BaseModel, ValidationError, validator
+from pydantic import BaseModel, ValidationError, validator
+from .cases.exceptions.module_validation_exception import ModuleValidationException
 
-# from .cases.exceptions.module_validation_exception import ModuleValidationException
 
-"""
 class TestInput(BaseModel):  # STRUCTURE VALIDATION
 # platform inputs
     projectduration: int
     actorshare: list
     discountrate_i: list
     rls: list
-    sinks: list
-
+    
 # MM inputs
-
     price_h: list
-    opcost_i: list
-    dispatch_ih: list
+    op_cost: dict
+    Pn: dict
 
 # TEO inputs
-    opex_tt: list
-    capex_t_names: list
-    capex_s_names: list
-    sal_tt: list
-    sal_st: list
-    capex_tt: list
-    capex_st: list
+    opex_values: list
+    capex_names: list
+    sal_values: list
+    capex_values: list
+    
 
 # plat form inputs test
     @validator('projectduration')
@@ -43,12 +39,13 @@ class TestInput(BaseModel):  # STRUCTURE VALIDATION
             raise ValueError("Project lifetime cannot be zero. Please provide a valid value for project lifetime.")
         return v
 
-    @validator('actorshare')
-    def sumofactorshare(cls, v, values, **kwargs):
-        if sum(v) != 1:
-            raise ValueError(
-                "Grid ownership struture is wrongfully definied. The sum of share of all actors should be equal to 1")
-        return v
+    #@validator('actorshare')
+    #def sumofactorshare(cls, v, values, **kwargs):
+
+    #    if sum(v) != 1:
+    #        raise ValueError(
+    #            "Grid ownership struture is wrongfully definied. The sum of share of all actors should be equal to 1")
+    #    return v
 
     @validator('discountrate_i')
     def discountratevalidity(cls, v, values, **kwargs):
@@ -64,47 +61,37 @@ class TestInput(BaseModel):  # STRUCTURE VALIDATION
          #   raise ValueError("Error in Technology ownership. Rows must be equal to number of technologies, including storages.")
         return v
 
-    @validator('sinks')
-    def sinksvalidity(cls, v, values, **kwargs):
-        if len(v) == 0:
-            raise ValueError("There must be atleast one sink in the simulation.")
-        return v
-
 ## MM input tests
-    @validator('dispatch_ih')
+    @validator('Pn') # change this name
     def dispatchvalidity(cls, v, values, **kwargs):
-        if len(v) != len(values['opcost_i']):
+        #vv= list(v.items())
+       # vv= gg.astype(float)
+        if len(v) != len(values['op_cost']):
             raise ValueError("Dispatch or operating cost missing for one or more actors.")
-        if len(v[0]) != len(values["price_h"]):
-            raise ValueError("Dispatch or price missing for one or more timesteps.")
-        rlsnp = np.array(values["rls"])
-        max = rlsnp.max(axis=0, keepdims=True)
-        mm = max[0]
-        if mm[0] + 1 != len(values["opcost_i"]):
-            raise ValueError(
-                "operating cost missing for one or more actors or ownership is not defined for all the actors")
+         #if len(v[0]) != len(values['price_h']):
+          #  raise ValueError("Dispatch or price missing for one or more timesteps.")
+    #    rlsnp = np.array(values["rls"])
+    #    max = rlsnp.max(axis=0, keepdims=True)
+    #    mm = max[0]
+    #    if mm[0] + 1 != len(values["op_cost"]):
+    #        raise ValueError(
+    #            "operating cost missing for one or more actors or ownership is not defined for all the actors")
         return v
 
 ## TEO input test
-    @validator('capex_tt')
+    @validator('capex_values')
     def capexvalidity(cls, v, values, **kwargs):
-        if len(v) != len(values["opex_tt"]):
+        if len(v) != len(values["opex_values"]):
             raise ValueError("Capex and Opex must be defined for each technology.")
-        if len(v) != len(values["capex_t_names"]):
+        if len(v) != len(values["capex_names"]):
             raise ValueError("Capex and their names must be defined for each technology.")
-        if len(v) != len(values["sal_tt"]):
+        if len(v) != len(values["sal_values"]):
             raise ValueError("Capex and salvage costs must be defined for each technology.")
         return v
 
-    @validator('capex_st')
-    def capexstvalidity(cls, v, values, **kwargs):
-        if len(v) != len(values["capex_s_names"]):
-            raise ValueError("storages Capex and their name must be defined for each storage unit.")
-        if len(v) != len(values["sal_st"]):
-            raise ValueError("Storages Capex and their salvage costs must be defined for each technology.")
-        return v
+
 ### Error handling ends
-"""
+
 
 
 def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
@@ -158,16 +145,30 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
 
 # Input Error check - Error handling ---- Starts---
-#    _indict = { **Platform, **MM, **TEO}
-#    try:
-#        _model = TestInput(**_indict)
+    print(type(price_h))
+    print(type(Pn))
+    Pnn = np.array(market["Pn"])
+    mm = {
+        "price_h": price_h.tolist(),
+        "Pn" : Pnn.tolist(),
+        "op_cost" : op_cost
+    }
+    teo={
+        "capex_names":capex_names.tolist(),
+        "capex_values":capex_values.tolist(),
+        "sal_values":sal_values.tolist(),
+        "opex_values":opex_values.tolist()
+    }
+    _indict = { **Platform, **mm, **teo}
+    try:
+        _model = TestInput(**_indict)
 
     # print(_model.schema_json(indent=2))
 
-#    except ValidationError as e:
-#        raise ModuleValidationException(code=1, msg="Problem with Business module", error=e)
+    except ValidationError as e:
+        raise ModuleValidationException(code=1, msg="Problem with Business module", error=e)
     #except Exception as e:
-    #    print(e)
+#    print(e)
 
 # Input Error check - Error handling ---- Ends---
 
