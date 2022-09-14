@@ -45,4 +45,4 @@ def test_bm():
 
     print(BM_output)
 
-test_bm()
+#test_bm()
