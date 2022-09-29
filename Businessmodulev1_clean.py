@@ -111,6 +111,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     discountrate_i = np.array(Platform["discountrate_i"])
     # important connects actors (first col) with different tech (second col)
     rls = Platform["rls"]
+    rls_map = Platform["rls_map"]
     net_cost = np.array(GIS["net_cost"])
 
     ### input extraction from MM (dict is market)
@@ -145,8 +146,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
 
 # Input Error check - Error handling ---- Starts---
-    print(type(price_h))
-    print(type(Pn))
+
     Pnn = np.array(market["Pn"])
     mm = {
         "price_h": price_h.tolist(),
@@ -309,6 +309,31 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
             actor_names.append(i)
         count = count + 1
 
+    real_actor_names = actor_names.copy()
+    real_s_names = s_names.copy()
+
+    count = 0
+    for i in actor_names:
+        name = " "
+        for j in rls_map:
+            if i == j[0].replace(" ", ""):
+                name = j[1]
+
+        real_actor_names[count] = name
+        count = count + 1
+    count = 0
+    for i in s_names:
+        name = " "
+        for j in rls_map:
+            if i == j[0].replace(" ", ""):
+                name = j[1]
+
+        real_s_names[count] = name
+        count = count + 1
+
+    s_names = real_s_names
+    actor_names = real_actor_names
+
     dispatch_i = mdf_uniq["total_dispatch"].to_numpy()
     revenues_i = mdf_uniq["total_rev"].to_numpy()
     opcost_i = mdf_uniq["op_cost_i"].to_numpy()
@@ -447,7 +472,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     fig2, ax = plt.subplots()
     for i in range(0, netyearlyflow_i.size):
-        ax.plot(r_sen_b, NPV_sen_i[i, :], label="Actor %s" % actor_names[i])
+        ax.plot(r_sen_b, NPV_sen_i[i, :], label="%s" % actor_names[i])
     plt.legend(loc="upper left")
     plt.ylabel('NPV')
     plt.xlabel('Discount rate')
@@ -455,7 +480,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     fig3, ax = plt.subplots()
     for i in range(0, opex_s.size):
-        ax.plot(r_sen_b, LCOH_sen[i, :], label="Actor %s" % s_names[i])
+        ax.plot(r_sen_b, LCOH_sen[i, :], label="%s" % s_names[i])
     plt.legend(loc="upper left")
     plt.ylabel('LCOH - €/kWh')
     plt.xlabel('Discount rate')
