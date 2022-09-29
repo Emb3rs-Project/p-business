@@ -33,7 +33,7 @@ def test_bm():
             "rls_map": [["source 1", "cement plant"],
                     ["source 2", "iron manufacturing unit"],
                     ["source 3", "steel"],
-                    ["source 3", "something hot"],
+                    ["source 4", "something hot"],
                     ["sink 5", "house 1"],
                     ["sink 6", "office 1"],
                     ["sink 7", "office 2"],
