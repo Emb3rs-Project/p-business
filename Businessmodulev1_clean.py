@@ -251,16 +251,22 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     teodf_uniq = teodf.groupby('agent_teo').sum()
 
     # taking out grid part
-    mdf_uniq = mdf_uniq.iloc[1:]
+    #mdf_uniq = mdf_uniq.iloc[1:]
 
-    grid = teodf_uniq.iloc[0]
-    teodf_uniq = teodf_uniq.iloc[1:]
+    #grid = teodf_uniq.iloc[0]
+    #teodf_uniq = teodf_uniq.iloc[1:]
 
     ######### rls operation
     mdf_uniq["owner"] = " "
     teodf_uniq["owner"] = " "
     mdf_uniq['agent_market'] = mdf_uniq.index
     teodf_uniq['agent_techno'] = teodf_uniq.index
+    mdf_uniq = mdf_uniq.drop(mdf_uniq[mdf_uniq.agent_market.str.contains("grid")].index)
+    mdf_uniq = mdf_uniq.drop(mdf_uniq[mdf_uniq.agent_market.str.contains("dhn")].index)
+    grid_idx = teodf_uniq[teodf_uniq.agent_techno.str.contains("grid")].index
+    grid = teodf_uniq.loc["grid"]
+    teodf_uniq = teodf_uniq.drop(teodf_uniq[teodf_uniq.agent_techno.str.contains("grid")].index)
+    teodf_uniq = teodf_uniq.drop(teodf_uniq[teodf_uniq.agent_techno.str.contains("dhn")].index)
 
     for i in rls:
         actor = i[0].replace(" ", "")
@@ -374,13 +380,18 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     # NPV calculation
     netyearlyflow = revenues - op_cost
-
+    if not netyearlyflow:
+        netyearlyflow = 0
     sumyearlyflow = 0
+    rev_yearly = 0
+    op_cost_yearly = 0
     for i in range(1, y + 1):
         sumyearlyflow += netyearlyflow / (1 + r) ** i
-
+        rev_yearly += revenues / (1 + r) ** i
+        op_cost_yearly += op_cost / (1 + r) ** i
     NPV_socio = sumyearlyflow - capex - opex
-    PayBack_socio = (capex + opex + (op_cost * y)) / (revenues * y)
+
+    PayBack_socio = (capex + opex + op_cost_yearly) / (rev_yearly)
     sumyearlyflow = 0
     for i in range(1, y + 1):
         sumyearlyflow += netyearlyflow / (1 + r_sen) ** i
@@ -402,6 +413,8 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     # 1D array[ actor1, actor2, ...., actorX]
     netyearlyflow_i = revenues_i - opcost_i - opex_i / y
+    if not netyearlyflow_i:
+        netyearlyflow_i = 0
     sumyearlyflow_i = np.zeros(len(netyearlyflow_i))
     for i in range(1, y + 1):
         sumyearlyflow_i += netyearlyflow_i / (1 + r_b) ** i  # 1D array
@@ -419,7 +432,15 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     for i in range(0, rev_new.size):
         if rev_new[i] == 0:
             rev_new[i] = float("nan")
-    PayBack_i = (capex_i + opex_i + (opcost_i * y)) / (rev_new * y)
+
+    rev_yearly = 0
+    op_cost_yearly = 0
+    for i in range(1, y + 1):
+        rev_yearly += rev_new / (1 + r_b) ** i
+        op_cost_yearly += np.array(opcost_i) / (1 + r_b) ** i
+
+    PayBack_i = (capex_i + opex_i + op_cost_yearly) / (rev_yearly)
+
 
     # sensitivity ananlysis for NPV
 
