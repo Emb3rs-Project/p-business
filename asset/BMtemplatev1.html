@@ -31,33 +31,49 @@
 
 <div>
   
-<p>The figures B1 & B2 below presents the Net Present Value (NPV) for socio-economic and private business scenarios, respectively. The sensitivity analysis is added to the discount rates.</p>
+<p>The figures B1 & B2 below presents the Net Present Value (NPV) for socio-economic scenario with and without grid cost, respectively. Similarly, figures B3 & B4 depict the same for private business scenario. The sensitivity analysis is conducted on discount rates.</p>
 {{plotNPVs}}
- <p><i>Figure B1: Net Present Value(NPV) for scocio-economic scenario. </i></p>
+ <p><i>Figure B1: Net Present Value(NPV) for scocio-economic scenario including grid costs. </i></p>
+{{plotNPVs_wogrid}}
 
+<p><i>Figure B2: Net Present Value(NPV) for scocio-economic scenario without grid costs. </i></p>
 {{plotNPVb}}
-<p><i>Figure B2: Net Present Value(NPV) for private business scenario. </i></p>
-
+<p><i>Figure B3: Net Present Value(NPV) for private business scenario including grid costs. Grid cost is assigned to each actor based on the grid ownership structure.</i></p>
+{{plotNPVb_wogrid}}
+<p><i>Figure B4: Net Present Value(NPV) for private business scenario without grid costs. </i></p>
 
 </div>
 
 <h2>Internal Rate of Return</h2>
 <div>
-  <p>The Internal Rate of Return(IRR) for socio-economic scenario is <b> {{IRR_socio}} </b>%. The IRR values for each actor under the private business scenario are shown in the table below:</p>
+  <p>The IRR values are shown in the table below:</p>
     
       <table class="table table-bordered">
         <thead>
           <tr>
+            <th scope="col">Scenario</th>
             <th scope="col">Actor's name</th>
-            <th scope="col">IRR %</th>
+            <th scope="col">IRR % - with grid costs</th>
+            <th scope="col">IRR % - without grid costs</th>
             
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <th scope="row">Socio-economic</th>
+            <td>''</td>
+            <td>{{IRR_socio}}</td>
+            <td>{{IRR_socio_wo_grid}}</td>
+          </tr>
+
+          <tr>
+            <th rowspan = {{IRR_i|length+1}} >Private Business</th>
+          </tr>
           {% for i in IRR_i %}
           <tr>
-            <td>{{actor_names[loop.index-1]}} </td>
+            <td>{{actor_names[loop.index-1]}}</td>
 			<td>{{IRR_i[loop.index - 1]}} </td>
+            <td>{{IRR_i_wogrid[loop.index - 1]}} </td>
                      
           </tr>
 		   {% endfor %}
@@ -67,22 +83,33 @@
 
 <h2>Payback Period</h2>
 <div>
-  <p>The Payback period for socio-economic scenario is <b> {{Payback_socio}} </b> years. The Payback period for each actor under the private business scenario are shown in the table below:</p>
+  <p>TThe Payback periods are shown in the table below:</p>
     
       <table class="table table-bordered">
         <thead>
           <tr>
+            <th scope="col">Scenario</th>
             <th scope="col">Actor's name</th>
-            <th scope="col">Payback period- years</th>
+            <th scope="col">Payback period (years) - with grid costs</th>
+            <th scope="col">Payback period (years) - without grid costs</th>
             
           </tr>
         </thead>
         <tbody>
+         <tr>
+            <th scope="row">Socio-economic</th>
+            <td>''</td>
+            <td>{{Payback_socio}}</td>
+            <td>{{Payback_socio_wo_grid}}</td>
+          </tr>
+         <tr>
+            <th rowspan = {{IRR_i|length+1}} >Private Business</th>
+          </tr>
           {% for i in Payback_actors %}
           <tr>
             <td> {{actor_names[loop.index-1]}} </td>
 			<td>{{Payback_actors[loop.index - 1]}} </td>
-                     
+              <td>{{Payback_actors_wogrid[loop.index - 1]}} </td>
           </tr>
 		   {% endfor %}
         </tbody>
@@ -92,11 +119,15 @@
 
 <h2>Levelised Cost of Heat for Sinks</h2>
 <div>
-  <p>The Levelised Cost of Heat (LCOH) calculated for each sink are shown in the table below:</p>
+  <p>The Levelised Cost of Heat (LCOH) calculated for each sink are shown in figures B5 and B6.:</p>
 
 		{{plotLCOH}}
 
-<p><i>Figure B3: Levelised Cost of Heat (LCOH) for sinks. </i></p>
+<p><i>Figure B5: Levelised Cost of Heat (LCOH) for sinks including grid costs. Grid cost is assigned to each sink based on the grid ownership structure.</i></p>
+
+  {{plotLCOH_wogrid}}
+
+<p><i>Figure B5: Levelised Cost of Heat (LCOH) for sinks without grid costs.</i></p>
 </div>
 
 
