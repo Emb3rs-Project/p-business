@@ -380,7 +380,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     # NPV calculation
     netyearlyflow = revenues - op_cost
-    if not netyearlyflow:
+    if netyearlyflow.size == 0:
         netyearlyflow = 0
     sumyearlyflow = 0
     rev_yearly = 0
@@ -390,7 +390,8 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
         rev_yearly += revenues / (1 + r) ** i
         op_cost_yearly += op_cost / (1 + r) ** i
     NPV_socio = sumyearlyflow - capex - opex
-
+    if rev_yearly == 0:
+        rev_yearly = 0.000000001
     PayBack_socio = (capex + opex + op_cost_yearly) / (rev_yearly)
     sumyearlyflow = 0
     for i in range(1, y + 1):
@@ -413,7 +414,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     # 1D array[ actor1, actor2, ...., actorX]
     netyearlyflow_i = revenues_i - opcost_i - opex_i / y
-    if not netyearlyflow_i:
+    if netyearlyflow_i.size == 0:
         netyearlyflow_i = 0
     sumyearlyflow_i = np.zeros(len(netyearlyflow_i))
     for i in range(1, y + 1):
