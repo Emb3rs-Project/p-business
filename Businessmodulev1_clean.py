@@ -382,7 +382,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     opex_wo_grid = np.sum(opex_i) + np.sum(opex_s)  # all opex without grid
     capex_wo_grid = np.sum(capex_i_wogrid)  # all capex without grid
 
-    revenues = np.sum(revenues_i)# - np.sum(heat_cost_s)
+    revenues = np.sum(revenues_i) + np.sum(heat_cost_s)
     op_cost = np.sum(opcost_i) + np.sum(opcost_s)
     r = discountrate_i[0]
 
