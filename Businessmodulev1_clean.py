@@ -223,12 +223,13 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     mdf_uniq = mdf.groupby('agent_m').sum()
 
     ## combining everything at source and sink resolution for TEO
-
+    grid_flag = 0
     teo_agents_copy = capex_names
     teo_agents_fil = []
     for i in teo_agents_copy:
         if i.find("grid") >= 0:
             tech = "grid"
+            grid_flag=1
         elif i.find("storage") >= 0:
             tech = "grid"
         elif i.find("sou") >= 0:
@@ -264,7 +265,10 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     mdf_uniq = mdf_uniq.drop(mdf_uniq[mdf_uniq.agent_market.str.contains("grid")].index)
     mdf_uniq = mdf_uniq.drop(mdf_uniq[mdf_uniq.agent_market.str.contains("dhn")].index)
     grid_idx = teodf_uniq[teodf_uniq.agent_techno.str.contains("grid")].index
-    grid = teodf_uniq.loc["grid"]
+    if grid_flag:
+        grid = teodf_uniq.loc["grid"]
+    else:
+        grid = {'capex_values': 0, 'sal_values': 0, 'opex': 0, 'owner': 0, 'agent_techno': 0}
     teodf_uniq = teodf_uniq.drop(teodf_uniq[teodf_uniq.agent_techno.str.contains("grid")].index)
     teodf_uniq = teodf_uniq.drop(teodf_uniq[teodf_uniq.agent_techno.str.contains("dhn")].index)
 
