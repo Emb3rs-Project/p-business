@@ -392,7 +392,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     # +- 50% variations with total 5 values in R
     r_sen = np.linspace(r * 0.5, r * 1.5, 5)
-    y = projectduration
+    y = int(projectduration)
 
     # NPV calculation
     netyearlyflow = revenues - op_cost
