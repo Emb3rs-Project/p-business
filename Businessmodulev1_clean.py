@@ -177,7 +177,11 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 ####################################################3
 
     mm_agents = []
-    dispatch_ih = np.zeros(shape=(len(Pn), 8760))
+    ncoll=0
+    for i in Pn.keys():
+        ncoll = len(Pn[i])
+
+    dispatch_ih = np.zeros(shape=(len(Pn), ncoll))
     op_cost_i = []
     count = 0
     for i in Pn.keys():
