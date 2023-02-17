@@ -364,7 +364,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     capex_s_wogrid = capex_i_wogrid[s]
     opex_s_wogrid = opex_i_wogrid[s]
     opcost_s = opcost_i[s]
-    heat_cost_s = revenues_i[s]  # money spent by sink to buy heat
+    heat_cost_s = abs(revenues_i[s])  # money spent by sink to buy heat
     dispatch_s = (-1) * dispatch_i[
         s
     ]  # make sure dispatch also take into account energy consumed by sink
@@ -388,7 +388,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     opex = np.sum(opex_i) + np.sum(opex_s) + grid["opex"]
     opex_w_grid = grid["opex"]  # grid opex
     opex_wo_grid = np.sum(opex_i) + np.sum(opex_s)  # all opex without grid
-    capex_wo_grid = np.sum(capex_i_wogrid)  # all capex without grid
+    capex_wo_grid = np.sum(capex_i_wogrid) + np.sum(capex_s_wogrid)  # all capex without grid # all capex without grid
 
     revenues = np.sum(revenues_i) + np.sum(heat_cost_s)
     op_cost = np.sum(opcost_i) + np.sum(opcost_s)
@@ -400,30 +400,36 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     # NPV calculation
     netyearlyflow = revenues - op_cost
+
     if netyearlyflow.size == 0:
         netyearlyflow = 0
-    sumyearlyflow = 0
-    rev_yearly = 0
-    op_cost_yearly = 0
-    for i in range(1, y + 1):
-        sumyearlyflow += netyearlyflow / (1 + r) ** i
-        rev_yearly += revenues / (1 + r) ** i
-        op_cost_yearly += op_cost / (1 + r) ** i
-    NPV_socio = sumyearlyflow - capex - opex
+    sumyearlyflow = netyearlyflow
+    rev_yearly = revenues
+    op_cost_yearly = op_cost
+    for i in range(1, y):
+        sumyearlyflow += netyearlyflow / (1 + (r / 100)) ** i
+        rev_yearly += revenues / (1 + (r / 100)) ** i
+        op_cost_yearly += op_cost / (1 + (r / 100)) ** i
+
+    NPV_socio = sumyearlyflow - capex - opex  # NPV with grid
     NPV_socio_wo_grid = sumyearlyflow - capex_wo_grid - opex_wo_grid  # NPV without grid
+
     if rev_yearly == 0:
         rev_yearly = 0.000000001
-    PayBack_socio = (capex + opex + op_cost_yearly) / (rev_yearly)
-    PayBack_socio_wo_grid = (capex_wo_grid + opex_wo_grid + op_cost_yearly) / (rev_yearly)  # payback without grid
-    sumyearlyflow = 0
-    for i in range(1, y + 1):
-        sumyearlyflow += netyearlyflow / (1 + r_sen) ** i
+    PayBack_socio = (capex + opex) / (netyearlyflow)
+    PayBack_socio_wo_grid = (capex_wo_grid + opex_wo_grid) / (netyearlyflow)  # payback without grid
+
+    sumyearlyflow = netyearlyflow
+    for i in range(1, y):
+        sumyearlyflow += netyearlyflow / (1 + (r_sen / 100)) ** i
 
     NPV_socio_sen = sumyearlyflow - capex - opex
     NPV_socio_sen_wo_grid = sumyearlyflow - capex_wo_grid - opex_wo_grid
+
     # np.append(-capex, np.full(y, netyearlyflow))
     IRR_socio = npf.irr(np.append(-(capex + opex), np.full(y, netyearlyflow)))
     IRR_socio_wo_grid = npf.irr(np.append(-(capex_wo_grid + opex_wo_grid), np.full(y, netyearlyflow)))
+
     # ------------------------------------------
     # if Business
     # -----------------------------------------
@@ -436,28 +442,31 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     # 1D array[ actor1, actor2, ...., actorX]
     netyearlyflow_i = revenues_i - opcost_i
+
     if netyearlyflow_i.size == 0:
         netyearlyflow_i = 0
-    sumyearlyflow_i = np.zeros(len(netyearlyflow_i))
-    for i in range(1, y + 1):
-        sumyearlyflow_i += netyearlyflow_i / (1 + r_b) ** i  # 1D array
+
+    # sumyearlyflow_i = np.zeros(len(netyearlyflow_i))
+    sumyearlyflow_i = np.copy(netyearlyflow_i)
+    for i in range(1, y):
+        sumyearlyflow_i += netyearlyflow_i / (1 + (r_b / 100)) ** i  # 1D array
 
     NPV_i = sumyearlyflow_i - capex_i - opex_i
     NPV_i_wo_grid = sumyearlyflow_i - capex_i_wogrid - opex_i_wogrid
 
-    rev_new = revenues_i
+    rev_new = revenues_i - opcost_i
     for i in range(0, rev_new.size):
         if rev_new[i] == 0:
             rev_new[i] = float("nan")
 
-    rev_yearly = 0
-    op_cost_yearly = 0
-    for i in range(1, y + 1):
-        rev_yearly += rev_new / (1 + r_b) ** i
-        op_cost_yearly += np.array(opcost_i) / (1 + r_b) ** i
+    rev_yearly = np.copy(rev_new)
+    op_cost_yearly = np.array(opcost_i)
+    for i in range(1, y):
+        rev_yearly += rev_new / (1 + (r_b / 100)) ** i
+    # op_cost_yearly += np.array(opcost_i) / (1 + (r_b/100)) ** i
 
-    PayBack_i = (capex_i + opex_i + op_cost_yearly) / (rev_yearly)
-    PayBack_i_wogrid = (capex_i_wogrid + opex_i_wogrid + op_cost_yearly) / (rev_yearly)
+    PayBack_i = (capex_i + opex_i) / (rev_new)
+    PayBack_i_wogrid = (capex_i_wogrid + opex_i_wogrid) / (rev_new)
 
     ### INTERNAL RATE OF RETURN IRR for Private Business scenario
     IRR_i = np.zeros(netyearlyflow_i.size)
@@ -477,11 +486,12 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     netyearlyflow_i = netyearlyflow_i[np.newaxis]
 
     sumyearlyflow_i = np.zeros(netyearlyflow_i.size).reshape((-1, 1))  # column matrix
+    # sumyearlyflow_i = np.copy(netyearlyflow_i).reshape((-1, 1))  # column matrix
     for j in range(0, r_sen_b.size):
-        sumyearlyflow_i_temp = 0
-        for i in range(1, y + 1):
+        sumyearlyflow_i_temp = np.copy(netyearlyflow_i)
+        for i in range(1, y):
             # row matrix (rows represents cash flow for each actor at a given r (column))
-            sumyearlyflow_i_temp += netyearlyflow_i / (1 + r_sen_b[j]) ** i
+            sumyearlyflow_i_temp += netyearlyflow_i / (1 + (r_sen_b[j] / 100)) ** i
 
         # row to column matrix
         temp = np.reshape(sumyearlyflow_i_temp, (netyearlyflow_i.size, 1))
@@ -501,13 +511,15 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     NPV_sen_i_wogrid = sumyearlyflow_i - capex_i_wogrid - opex_i_wogrid  # 2D matrix
 
     # >>>>>>>>> LCOH calculation
+    yearly_var_cost = ((opex_s / y) + opcost_s + heat_cost_s)
+
     LCOH_sen = np.zeros((opex_s.size, 1))  # column matrix
     for j in range(0, r_sen_b.size):
-        sumrevflow = 0
-        sumdisflow = 0
-        for i in range(1, y + 1):
-            sumrevflow += ((opex_s / y) + opcost_s + heat_cost_s) / ((1 + r_sen_b[j]) ** i)
-            sumdisflow += dispatch_s / ((1 + r_sen_b[j]) ** i)
+        sumrevflow = np.copy(yearly_var_cost)
+        sumdisflow = np.copy(dispatch_s)
+        for i in range(1, y):
+            sumrevflow += (yearly_var_cost) / ((1 + (r_sen_b[j] / 100)) ** i)
+            sumdisflow += dispatch_s / ((1 + (r_sen_b[j] / 100)) ** i)
         for k in range(0, sumdisflow.size):
             if sumdisflow[k] == 0:
                 sumdisflow[k] = float("nan")
@@ -517,21 +529,22 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
         LCOH_sen = np.append(LCOH_sen, LCOH_s, axis=1)
 
     LCOH_sen = np.delete(LCOH_sen, 0, 1)
-
+    yearly_var_cost = ((opex_s_wogrid / y) + opcost_s + heat_cost_s)
     LCOH_sen_wogrid = np.zeros((opex_s_wogrid.size, 1))  # column matrix
+
     for j in range(0, r_sen_b.size):
-        sumrevflow = 0
-        sumdisflow = 0
-        for i in range(1, y + 1):
-            sumrevflow += ((opex_s_wogrid / y) + opcost_s + heat_cost_s) / ((1 + r_sen_b[j]) ** i)
-            sumdisflow += dispatch_s / ((1 + r_sen_b[j]) ** i)
+        sumrevflow = np.copy(yearly_var_cost)
+        sumdisflow = np.copy(dispatch_s)
+        for i in range(1, y):
+            sumrevflow += (yearly_var_cost) / ((1 + (r_sen_b[j] / 100)) ** i)
+            sumdisflow += dispatch_s / ((1 + (r_sen_b[j] / 100)) ** i)
         for k in range(0, sumdisflow.size):
             if sumdisflow[k] == 0:
                 sumdisflow[k] = float("nan")
         # print(sumdisflow)
         LCOH_s_wogrid = (capex_s_wogrid + sumrevflow) / sumdisflow
         LCOH_s_wogrid = LCOH_s_wogrid.reshape((-1, 1))
-        LCOH_sen_wogrid = np.append(LCOH_sen, LCOH_s_wogrid, axis=1)
+        LCOH_sen_wogrid = np.append(LCOH_sen_wogrid, LCOH_s_wogrid, axis=1)
 
     LCOH_sen_wogrid = np.delete(LCOH_sen_wogrid, 0, 1)
 
