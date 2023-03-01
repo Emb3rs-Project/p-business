@@ -200,14 +200,16 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     for i in mm_agents_copy:
         if i.find("grid") >= 0:
             tech = "grid"
+            #grid_flag=1
+        elif i.find("storage") >= 0:
+            tech = "grid"
+            #grid_flag = 1
         elif i.find("sou") >= 0:
             dig = re.findall("sou\B([0-9]+)", i)
             tech = "source" + dig[0]
         elif i.find("sink") >= 0:
             dig = re.findall("sink\B([0-9]+)", i)
             tech = "sink" + dig[0]
-        elif i.find("dhn") >= 0:
-            tech = "dhn"
 
         mm_agents_fil.append(tech)
 
@@ -236,6 +238,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
             grid_flag=1
         elif i.find("storage") >= 0:
             tech = "grid"
+            grid_flag = 1
         elif i.find("sou") >= 0:
             dig = re.findall("sou\B([0-9]+)", i)
             tech = "source" + dig[0]
