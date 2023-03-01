@@ -617,9 +617,9 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     template_content = template.render(plotNPVs_wogrid=fig4ht, plotNPVb_wogrid=fig5ht, plotLCOH_wogrid=fig6ht,
                                        plotNPVs=fig1ht, IRR_socio=np.around(IRR_socio, decimals=4), plotNPVb=fig2ht,
                                        plotLCOH=fig3ht, actor_names=actor_names, IRR_i=np.around(IRR_i, decimals=4),
-                                       Payback_socio=np.around(PayBack_socio),
-                                       Payback_socio_wo_grid=np.around(PayBack_socio_wo_grid),
-                                       Payback_actors_wogrid=np.around(PayBack_i_wogrid),
+                                       Payback_socio=np.around(PayBack_socio,decimals=3),
+                                       Payback_socio_wo_grid=np.around(PayBack_socio_wo_grid, decimals=3),
+                                       Payback_actors_wogrid=np.around(PayBack_i_wogrid, decimals=3),
                                        IRR_socio_wo_grid=np.around(IRR_socio_wo_grid, decimals=4),
                                        IRR_i_wogrid=np.around(IRR_i_wogrid, decimals=4),
                                        Payback_actors=np.around(PayBack_i), num=8)
