@@ -357,9 +357,10 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     # Adding share of network cost to each actors capex
     capex_i_wogrid = capex_i  # capex without grid cost
-    capex_i = capex_i + ((net_cost + grid["capex_values"] - grid["sal_values"]) * np.array(actorshare))
+    a_np = np.array(actorshare)
+    capex_i = capex_i + ((net_cost + grid["capex_values"] - grid["sal_values"]) * a_np[0:len(capex_i)])
     opex_i_wogrid = opex_i
-    opex_i = opex_i + (grid["opex"] * np.array(actorshare))
+    opex_i = opex_i + (grid["opex"] * a_np[0:len(capex_i)])
     # seperating sink
 
     capex_s = capex_i[s]
