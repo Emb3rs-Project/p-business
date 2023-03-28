@@ -32,7 +32,8 @@
 <div>
   
 <p>The figures B1 & B2 below presents the Net Present Value (NPV) for socio-economic scenario with and without grid cost, respectively. Similarly, figures B3 & B4 depict the same for private business scenario. The sensitivity analysis is conducted on discount rates.</p>
-{{plotNPVs}}
+<p>{{msgNPV}} </p>
+    {{plotNPVs}}
  <p><i>Figure B1: Net Present Value(NPV) for scocio-economic scenario including grid costs. </i></p>
 {{plotNPVs_wogrid}}
 
@@ -47,7 +48,7 @@
 <h2>Internal Rate of Return</h2>
 <div>
   <p>The IRR values are shown in the table below:</p>
-    
+   <p>{{msgIRR}} </p>
       <table class="table table-bordered" id="BM_datatable_1">
         <thead>
           <tr>
@@ -83,8 +84,8 @@
 
 <h2>Payback Period</h2>
 <div>
-  <p>TThe Payback periods are shown in the table below:</p>
-    
+  <p>The Payback periods are shown in the table below:</p>
+   <p>{{msgPB}} </p>
       <table class="table table-bordered" id="BM_datatable_2">
         <thead>
           <tr>
@@ -105,7 +106,7 @@
          <tr>
             <th rowspan = {{IRR_i|length+1}} >Private Business</th>
           </tr>
-          {% for i in Payback_actors %}
+          {% for i in Payback_actors_wogrid %}
           <tr>
             <td> {{actor_names[loop.index-1]}} </td>
 			<td>{{Payback_actors[loop.index - 1]}} </td>

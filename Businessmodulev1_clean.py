@@ -194,27 +194,29 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
         count = count + 1
 
     ## combining everything at source and sink resolution for MM
-
+    grid_flag = 0
     mm_agents_copy = mm_agents
+
     mm_agents_fil = []
     for i in mm_agents_copy:
+
         if i.find("grid") >= 0:
             tech = "grid"
-            #grid_flag=1
+            grid_flag = 1
         elif i.find("storage") >= 0:
             tech = "grid"
-            #grid_flag = 1
+            grid_flag = 1
         elif i.find("sou") >= 0:
             dig = re.findall("sou\B([0-9]+)", i)
             tech = "source" + dig[0]
         elif i.find("sink") >= 0:
             dig = re.findall("sink\B([0-9]+)", i)
             tech = "sink" + dig[0]
-
         mm_agents_fil.append(tech)
 
     total_dispatch_mi = np.sum(dispatch_ih, axis=1)
     revenues_mi = abs(dispatch_ih * price_h)
+
     total_revenues_mi = np.sum(revenues_mi, axis=1)
 
     data_df_m = {
@@ -228,14 +230,21 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     mdf = mdf[(mdf.agent_m != "dhn")]
     mdf_uniq = mdf.groupby('agent_m').sum()
 
+    ## Taking out the grid
+    if grid_flag:
+        grid_mm = mdf_uniq.loc[["grid"]]
+    else:
+        grid_mm = pd.DataFrame([[0, 0, 0]], columns=["total_dispatch", "total_rev", "op_cost_i"])
+
     ## combining everything at source and sink resolution for TEO
-    grid_flag = 0
     teo_agents_copy = capex_names
     teo_agents_fil = []
+    grid_flag = 0
+
     for i in teo_agents_copy:
         if i.find("grid") >= 0:
             tech = "grid"
-            grid_flag=1
+            grid_flag = 1
         elif i.find("storage") >= 0:
             tech = "grid"
             grid_flag = 1
@@ -258,24 +267,21 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     teodf = pd.DataFrame(data_df_teo)
     teodf_uniq = teodf.groupby('agent_teo').sum()
 
-    # taking out grid part
-    #mdf_uniq = mdf_uniq.iloc[1:]
-
-    #grid = teodf_uniq.iloc[0]
-    #teodf_uniq = teodf_uniq.iloc[1:]
+    ## Taking out the grid
+    if grid_flag:
+        grid_teo = teodf_uniq.loc[["grid"]]
+    else:
+        grid_teo = pd.DataFrame([[0, 0, 0]], columns=["capex_values", "sal_values", "opex"])
 
     ######### rls operation
     mdf_uniq["owner"] = " "
     teodf_uniq["owner"] = " "
     mdf_uniq['agent_market'] = mdf_uniq.index
-    teodf_uniq['agent_techno'] = teodf_uniq.index
     mdf_uniq = mdf_uniq.drop(mdf_uniq[mdf_uniq.agent_market.str.contains("grid")].index)
     mdf_uniq = mdf_uniq.drop(mdf_uniq[mdf_uniq.agent_market.str.contains("dhn")].index)
+    teodf_uniq['agent_techno'] = teodf_uniq.index
     grid_idx = teodf_uniq[teodf_uniq.agent_techno.str.contains("grid")].index
-    if grid_flag:
-        grid = teodf_uniq.loc["grid"]
-    else:
-        grid = {'capex_values': 0, 'sal_values': 0, 'opex': 0, 'owner': 0, 'agent_techno': 0}
+
     teodf_uniq = teodf_uniq.drop(teodf_uniq[teodf_uniq.agent_techno.str.contains("grid")].index)
     teodf_uniq = teodf_uniq.drop(teodf_uniq[teodf_uniq.agent_techno.str.contains("dhn")].index)
 
@@ -318,7 +324,6 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     actor_names = []
     count = 0
     for i in actors_i:
-
         if i.find("sink") >= 0:
             s.append(count)
             s_names.append(i)
@@ -350,160 +355,251 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     s_names = real_s_names
     actor_names = real_actor_names
+    a_np = np.array(actorshare)
 
-    dispatch_i = mdf_uniq["total_dispatch"].to_numpy()
-    revenues_i = mdf_uniq["total_rev"].to_numpy()
-    opcost_i = mdf_uniq["op_cost_i"].to_numpy()
+    # taking parameters from MM with and without grid costs
+    dispatch_i_wogrid = mdf_uniq["total_dispatch"].to_numpy()
+    revenues_i_wogrid = mdf_uniq["total_rev"].to_numpy()
+    opcost_i_wogrid = mdf_uniq["op_cost_i"].to_numpy()
+
+    # Adding share of network cost to each actors for MM cash flows
+    dispatch_i = dispatch_i_wogrid + (grid_mm["total_dispatch"].to_numpy() * a_np[0:len(dispatch_i_wogrid)])
+    revenues_i = revenues_i_wogrid + (grid_mm["total_rev"].to_numpy() * a_np[0:len(revenues_i_wogrid)])
+    opcost_i = opcost_i_wogrid + (grid_mm["op_cost_i"].to_numpy() * a_np[0:len(opcost_i_wogrid)])
 
     # Adding share of network cost to each actors capex
     capex_i_wogrid = capex_i  # capex without grid cost
-    a_np = np.array(actorshare)
-    capex_i = capex_i + ((net_cost + grid["capex_values"] - grid["sal_values"]) * a_np[0:len(capex_i)])
+    capex_i = capex_i + ((net_cost + grid_teo["capex_values"].to_numpy() - grid_teo["sal_values"].to_numpy()) * a_np[
+                                                                                                                0:len(
+                                                                                                                    capex_i)])
     opex_i_wogrid = opex_i
-    opex_i = opex_i + (grid["opex"] * a_np[0:len(capex_i)])
-    # seperating sink
+    opex_i = opex_i + (grid_teo["opex"].to_numpy() * a_np[0:len(capex_i)])
 
+    # seperating sink
     capex_s = capex_i[s]
     opex_s = opex_i[s]
-    capex_s_wogrid = capex_i_wogrid[s]
-    opex_s_wogrid = opex_i_wogrid[s]
+    dispatch_s = (-1) * dispatch_i[s]  # make sure dispatch also take into account energy consumed by sink
     opcost_s = opcost_i[s]
     heat_cost_s = abs(revenues_i[s])  # money spent by sink to buy heat
-    dispatch_s = (-1) * dispatch_i[
-        s
-    ]  # make sure dispatch also take into account energy consumed by sink
+
+    capex_s_wogrid = capex_i_wogrid[s]
+    opex_s_wogrid = opex_i_wogrid[s]
+    opcost_s_wogrid = opex_s_wogrid[s]
+    heat_cost_s_wogrid = abs(revenues_i_wogrid[s])
+    dispatch_s_wogrid = (-1) * dispatch_i[s]
+
     # seperating sources
     capex_i = np.delete(capex_i, s)
-    opex_i = np.delete(opex_i, s)
-    capex_i_wogrid = np.delete(capex_i_wogrid, s)
-    opex_i_wogrid = np.delete(opex_i_wogrid, s)
-    opcost_i = np.delete(opcost_i, s)
-    revenues_i = np.delete(revenues_i, s)
+
+    if capex_i.size == 0:
+        msg = "No source found in TEO & MM results. IRR, NPV, & Pyaback period for private business scenario are calculated by assuming grid connecting technology as only source. Please check TEO & MM results or make sure sources are included in simulation"
+        grid_actor_name = ["Grid connected tech"]
+        actor_names = grid_actor_name
+
+        capex_i = np.array(grid_teo["capex_values"].to_numpy()) + net_cost
+        opex_i = np.array(grid_teo["opex"].to_numpy()) + net_cost
+        revenues_i = np.array(grid_mm["total_rev"].to_numpy())
+        opcost_i = np.array(grid_mm["op_cost_i"].to_numpy())
+
+        capex_i_wogrid = np.array(grid_teo["capex_values"].to_numpy())
+        opex_i_wogrid = np.array(grid_teo["opex"].to_numpy())
+        opcost_i_wogrid = opcost_i
+        revenues_i_wogrid = revenues_i
+
+    else:
+        opex_i = np.delete(opex_i, s)
+        opcost_i = np.delete(opcost_i, s)
+        revenues_i = np.delete(revenues_i, s)
+
+        capex_i_wogrid = np.delete(capex_i_wogrid, s)
+        opex_i_wogrid = np.delete(opex_i_wogrid, s)
+        opcost_i_wogrid = np.delete(opcost_i_wogrid, s)
+        revenues_i_wogrid = np.delete(revenues_i_wogrid, s)
+        msg = ""
 
     # --------------------------------------------------------------------------
     #                         Pre-proccessing / Data preparation END
     # ---------------------------------------------------------------------------
 
     # --------------------------------------------------------------------------
-    #                         business mode conditional statement START
+    #                         SOCIO-ECONOMIC SCENARIO
     # ---------------------------------------------------------------------------
-    # if socio-economic (maybe not coz gonna calculate both scenario)
     capex = np.sum(capex_i) + np.sum(capex_s)
-    opex = np.sum(opex_i) + np.sum(opex_s) + grid["opex"]
-    opex_w_grid = grid["opex"]  # grid opex
-    opex_wo_grid = np.sum(opex_i) + np.sum(opex_s)  # all opex without grid
-    capex_wo_grid = np.sum(capex_i_wogrid) + np.sum(capex_s_wogrid)  # all capex without grid # all capex without grid
-
+    opex = np.sum(opex_i) + np.sum(opex_s)
     revenues = np.sum(revenues_i) + np.sum(heat_cost_s)
     op_cost = np.sum(opcost_i) + np.sum(opcost_s)
-    r = discountrate_i[0]
 
+    opex_wo_grid = np.sum(opex_i_wogrid) + np.sum(opex_s_wogrid)  # all opex without grid
+    capex_wo_grid = np.sum(capex_i_wogrid) + np.sum(capex_s_wogrid)  # all capex without grid
+    revenues_wo_grid = np.sum(revenues_i_wogrid) + np.sum(heat_cost_s_wogrid)
+    op_cost_wo_grid = np.sum(opcost_i_wogrid) + np.sum(opcost_s_wogrid)
+
+    r = discountrate_i[0]
     # +- 50% variations with total 5 values in R
     r_sen = np.linspace(r * 0.5, r * 1.5, 5)
     y = int(projectduration)
 
-    # NPV calculation
-    netyearlyflow = revenues - op_cost
+    # NPV, Paybalc, IRR calculation
 
-    if netyearlyflow.size == 0:
+    netyearlyflow = revenues - op_cost  # with grid cost
+    netyearlyflow_wo = revenues_wo_grid - op_cost_wo_grid  # without grid cost
+
+    if netyearlyflow.size == 0:  # with grid cost
         netyearlyflow = 0
-    sumyearlyflow = netyearlyflow
+    if netyearlyflow_wo.size == 0:  # wihtout grid cost
+        netyearlyflow_wo = 0
+
+    # with grid cost
+    sumyearlyflow = np.copy(netyearlyflow)
     rev_yearly = revenues
     op_cost_yearly = op_cost
+
+    # without grid cost
+    sumyearlyflow_wo = np.copy(netyearlyflow_wo)
+    rev_yearly_wo = revenues_wo_grid
+    op_cost_yearly_wo = op_cost_wo_grid
+
     for i in range(1, y):
+        # with grid
         sumyearlyflow += netyearlyflow / (1 + (r / 100)) ** i
         rev_yearly += revenues / (1 + (r / 100)) ** i
         op_cost_yearly += op_cost / (1 + (r / 100)) ** i
+        # without grid
+        sumyearlyflow_wo += netyearlyflow_wo / (1 + (r / 100)) ** i
+        rev_yearly_wo += revenues_wo_grid / (1 + (r / 100)) ** i
+        op_cost_yearly_wo += op_cost_wo_grid / (1 + (r / 100)) ** i
 
+    # NPV socio economic without sensitivity analysis
     NPV_socio = sumyearlyflow - capex - opex  # NPV with grid
-    NPV_socio_wo_grid = sumyearlyflow - capex_wo_grid - opex_wo_grid  # NPV without grid
+    NPV_socio_wo_grid = sumyearlyflow_wo - capex_wo_grid - opex_wo_grid  # NPV without grid
 
     if rev_yearly == 0:
         rev_yearly = 0.000000001
+
+    # Pay Back socio-economic without senstivity
     PayBack_socio = (capex + opex) / (netyearlyflow)
-    PayBack_socio_wo_grid = (capex_wo_grid + opex_wo_grid) / (netyearlyflow)  # payback without grid
+    PayBack_socio_wo_grid = (capex_wo_grid + opex_wo_grid) / (netyearlyflow_wo)  # payback without grid
 
-    sumyearlyflow = netyearlyflow
-    for i in range(1, y):
-        sumyearlyflow += netyearlyflow / (1 + (r_sen / 100)) ** i
+    sumyearlyflow = np.zeros((y, r_sen.size))  # with grid cost
+    sumyearlyflow_wo = np.zeros((y, r_sen.size))  # without Grid cost
 
-    NPV_socio_sen = sumyearlyflow - capex - opex
-    NPV_socio_sen_wo_grid = sumyearlyflow - capex_wo_grid - opex_wo_grid
+    for i in range(0, y):
+        temp = netyearlyflow / (1 + (r_sen / 100)) ** i  # with Grid cost
+        temp_wo = netyearlyflow_wo / (1 + (r_sen / 100)) ** i  # without Grid cost
+        sumyearlyflow[i, :] = temp
+        sumyearlyflow_wo[i, :] = temp_wo
 
-    # np.append(-capex, np.full(y, netyearlyflow))
+    # NPV with sensitivity analysis
+    NPV_socio_sen = sumyearlyflow.sum(axis=0) - capex - opex
+    NPV_socio_sen_wo_grid = sumyearlyflow_wo.sum(axis=0) - capex_wo_grid - opex_wo_grid
+
+    # IRR
     IRR_socio = npf.irr(np.append(-(capex + opex), np.full(y, netyearlyflow)))
-    IRR_socio_wo_grid = npf.irr(np.append(-(capex_wo_grid + opex_wo_grid), np.full(y, netyearlyflow)))
+    IRR_socio_wo_grid = npf.irr(np.append(-(capex_wo_grid + opex_wo_grid), np.full(y, netyearlyflow_wo)))
 
     # ------------------------------------------
-    # if Business
+    #           PRIVATE BUSINESS SCENARIO
     # -----------------------------------------
 
     # NPV & IRR calculation
 
-    r_b = discountrate_i[1]
+    r_b = int(discountrate_i[1])
+
     # +- 50% variations with total 5 values in R
     r_sen_b = np.linspace(r_b * 0.5, r_b * 1.5, 5)
 
     # 1D array[ actor1, actor2, ...., actorX]
-    netyearlyflow_i = revenues_i - opcost_i
+    netyearlyflow_i = revenues_i - opcost_i  # with grid cost
+    netyearlyflow_i_wo = revenues_i_wogrid - opcost_i_wogrid  # with grid cost
 
     if netyearlyflow_i.size == 0:
         netyearlyflow_i = 0
 
-    # sumyearlyflow_i = np.zeros(len(netyearlyflow_i))
+    if netyearlyflow_i_wo.size == 0:
+        netyearlyflow_i_wo = 0
+
+    # with Grid costs
     sumyearlyflow_i = np.copy(netyearlyflow_i)
+    sumyearlyflow_i = sumyearlyflow_i.astype('float64')
+
+    # without Grid costs
+    sumyearlyflow_i_wo = np.copy(netyearlyflow_i_wo)
+    sumyearlyflow_i_wo = sumyearlyflow_i_wo.astype('float64')
+
     for i in range(1, y):
         sumyearlyflow_i += netyearlyflow_i / (1 + (r_b / 100)) ** i  # 1D array
-
+        sumyearlyflow_i_wo += netyearlyflow_i_wo / (1 + (r_b / 100)) ** i
     NPV_i = sumyearlyflow_i - capex_i - opex_i
-    NPV_i_wo_grid = sumyearlyflow_i - capex_i_wogrid - opex_i_wogrid
+    NPV_i_wo_grid = sumyearlyflow_i_wo - capex_i_wogrid - opex_i_wogrid
 
-    rev_new = revenues_i - opcost_i
+    rev_new = revenues_i - opcost_i  # with grid cost
+    rev_new_wo = revenues_i_wogrid - opcost_i_wogrid  # without grid cost
+
+    # with Grid cost
     for i in range(0, rev_new.size):
         if rev_new[i] == 0:
             rev_new[i] = float("nan")
+    # without Grid cost
+    for i in range(0, rev_new_wo.size):
+        if rev_new_wo[i] == 0:
+            rev_new_wo[i] = float("nan")
 
+    # with Grid cost
     rev_yearly = np.copy(rev_new)
     op_cost_yearly = np.array(opcost_i)
-    for i in range(1, y):
+
+    # without Grid cost
+    rev_yearly_wo = 0
+    op_cost_yearly_wo = 0
+
+    for i in range(0, y + 1):
         rev_yearly += rev_new / (1 + (r_b / 100)) ** i
-    # op_cost_yearly += np.array(opcost_i) / (1 + (r_b/100)) ** i
+        rev_yearly_wo += rev_new_wo / (1 + (r_b / 100)) ** i
 
     PayBack_i = (capex_i + opex_i) / (rev_new)
-    PayBack_i_wogrid = (capex_i_wogrid + opex_i_wogrid) / (rev_new)
+
+    PayBack_i_wogrid = (capex_i_wogrid + opex_i_wogrid) / (rev_new_wo)
 
     ### INTERNAL RATE OF RETURN IRR for Private Business scenario
+
     IRR_i = np.zeros(netyearlyflow_i.size)
-    IRR_i_wogrid = np.zeros(netyearlyflow_i.size)
+    IRR_i_wogrid = np.zeros(netyearlyflow_i_wo.size)
 
     for i in range(0, netyearlyflow_i.size):
         nn = np.append(-opex_i[i] - capex_i[i], np.full(y, netyearlyflow_i[i]))
         IRR_i[i] = npf.irr(nn)
 
-        nn = np.append(-opex_i_wogrid[i] - capex_i_wogrid[i], np.full(y, netyearlyflow_i[i]))
+        nn = np.append(-opex_i_wogrid[i] - capex_i_wogrid[i], np.full(y, netyearlyflow_i_wo[i]))
         IRR_i_wogrid[i] = npf.irr(nn)
-
 
     # sensitivity ananlysis for NPV
 
     # from 1D array to row matrix[ [actor1], [actor2], ...., [actorX]]
-    netyearlyflow_i = netyearlyflow_i[np.newaxis]
+    netyearlyflow_i = netyearlyflow_i[np.newaxis]  # with Grid cost
+    netyearlyflow_i_wo = netyearlyflow_i_wo[np.newaxis]  # wihtout Grid
 
     sumyearlyflow_i = np.zeros(netyearlyflow_i.size).reshape((-1, 1))  # column matrix
-    # sumyearlyflow_i = np.copy(netyearlyflow_i).reshape((-1, 1))  # column matrix
+    sumyearlyflow_i_wo = np.zeros(netyearlyflow_i_wo.size).reshape((-1, 1))  # column matrix
+
     for j in range(0, r_sen_b.size):
         sumyearlyflow_i_temp = np.copy(netyearlyflow_i)
+        sumyearlyflow_i_wo_temp = np.copy(netyearlyflow_i_wo)
         for i in range(1, y):
             # row matrix (rows represents cash flow for each actor at a given r (column))
             sumyearlyflow_i_temp += netyearlyflow_i / (1 + (r_sen_b[j] / 100)) ** i
+            sumyearlyflow_i_wo_temp += netyearlyflow_i_wo / (1 + (r_sen_b[j] / 100)) ** i
 
         # row to column matrix
         temp = np.reshape(sumyearlyflow_i_temp, (netyearlyflow_i.size, 1))
+        temp_wo = np.reshape(sumyearlyflow_i_wo_temp, (netyearlyflow_i_wo.size, 1))
         # 2D matric with rows for each actor and column for different r
         sumyearlyflow_i = np.append(sumyearlyflow_i, temp, axis=1)
+        sumyearlyflow_i_wo = np.append(sumyearlyflow_i_wo, temp, axis=1)
 
     # removing first col as it is zero
     sumyearlyflow_i = np.delete(sumyearlyflow_i, 0, 1)
+    sumyearlyflow_i_wo = np.delete(sumyearlyflow_i_wo, 0, 1)
+
     capex_i = capex_i.reshape((-1, 1))  # row to column matrix
     opex_i = opex_i.reshape((-1, 1))
 
@@ -512,10 +608,13 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     capex_i_wogrid = capex_i_wogrid.reshape((-1, 1))  # row to column matrix
     opex_i_wogrid = opex_i_wogrid.reshape((-1, 1))
 
-    NPV_sen_i_wogrid = sumyearlyflow_i - capex_i_wogrid - opex_i_wogrid  # 2D matrix
+    NPV_sen_i_wogrid = sumyearlyflow_i_wo - capex_i_wogrid - opex_i_wogrid  # 2D matrix
+
+    fig_size = netyearlyflow_i.size
 
     # >>>>>>>>> LCOH calculation
-    yearly_var_cost = ((opex_s / y) + opcost_s + heat_cost_s)
+    yearly_var_cost = ((opex_s / y) + opcost_s + heat_cost_s)  # with grid cost
+    yearly_var_cost_wo = ((opex_s_wogrid / y) + opcost_s_wogrid + heat_cost_s_wogrid)  # without grid cost
 
     LCOH_sen = np.zeros((opex_s.size, 1))  # column matrix
     for j in range(0, r_sen_b.size):
@@ -537,11 +636,11 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     LCOH_sen_wogrid = np.zeros((opex_s_wogrid.size, 1))  # column matrix
 
     for j in range(0, r_sen_b.size):
-        sumrevflow = np.copy(yearly_var_cost)
-        sumdisflow = np.copy(dispatch_s)
+        sumrevflow = np.copy(yearly_var_cost_wo)
+        sumdisflow = np.copy(dispatch_s_wogrid)
         for i in range(1, y):
-            sumrevflow += (yearly_var_cost) / ((1 + (r_sen_b[j] / 100)) ** i)
-            sumdisflow += dispatch_s / ((1 + (r_sen_b[j] / 100)) ** i)
+            sumrevflow += (yearly_var_cost_wo) / ((1 + (r_sen_b[j] / 100)) ** i)
+            sumdisflow += dispatch_s_wogrid / ((1 + (r_sen_b[j] / 100)) ** i)
         for k in range(0, sumdisflow.size):
             if sumdisflow[k] == 0:
                 sumdisflow[k] = float("nan")
@@ -568,7 +667,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     # plt.title('NPV for Socio-economic Scenario without grid cost')
 
     fig2, ax = plt.subplots()
-    for i in range(0, netyearlyflow_i.size):
+    for i in range(0, fig_size):
         ax.plot(r_sen_b, NPV_sen_i[i, :], label="%s" % actor_names[i])
     plt.legend(loc="upper left")
     plt.ylabel('NPV')
@@ -576,7 +675,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     # plt.title('NPV for Business Scenario with grid cost')
 
     fig5, ax = plt.subplots()
-    for i in range(0, netyearlyflow_i.size):
+    for i in range(0, fig_size):
         ax.plot(r_sen_b, NPV_sen_i_wogrid[i, :], label="%s" % actor_names[i])
     plt.legend(loc="upper left")
     plt.ylabel('NPV')
@@ -618,14 +717,14 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     template_content = template.render(plotNPVs_wogrid=fig4ht, plotNPVb_wogrid=fig5ht, plotLCOH_wogrid=fig6ht,
                                        plotNPVs=fig1ht, IRR_socio=np.around(IRR_socio, decimals=4), plotNPVb=fig2ht,
                                        plotLCOH=fig3ht, actor_names=actor_names, IRR_i=np.around(IRR_i, decimals=4),
-                                       Payback_socio=np.around(PayBack_socio,decimals=3),
+                                       Payback_socio=np.around(PayBack_socio, decimals=3),
                                        Payback_socio_wo_grid=np.around(PayBack_socio_wo_grid, decimals=3),
                                        Payback_actors_wogrid=np.around(PayBack_i_wogrid, decimals=3),
                                        IRR_socio_wo_grid=np.around(IRR_socio_wo_grid, decimals=4),
                                        IRR_i_wogrid=np.around(IRR_i_wogrid, decimals=4),
-                                       Payback_actors=np.around(PayBack_i), num=8)
-
-
+                                       Payback_actors=np.round(PayBack_i, decimals=3),
+                                       msgNPV=msg, msgIRR=msg, msgPB=msg
+                                       )
     if generate_template:
         f = open("index.html", "w")
         f.write(template_content)
