@@ -384,7 +384,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
 
     capex_s_wogrid = capex_i_wogrid[s]
     opex_s_wogrid = opex_i_wogrid[s]
-    opcost_s_wogrid = opex_s_wogrid[s]
+    opcost_s_wogrid = opcost_i_wogrid[s]
     heat_cost_s_wogrid = abs(revenues_i_wogrid[s])
     dispatch_s_wogrid = (-1) * dispatch_i[s]
 
@@ -397,7 +397,7 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
         actor_names = grid_actor_name
 
         capex_i = np.array(grid_teo["capex_values"].to_numpy()) + net_cost
-        opex_i = np.array(grid_teo["opex"].to_numpy()) + net_cost
+        opex_i = np.array(grid_teo["opex"].to_numpy())
         revenues_i = np.array(grid_mm["total_rev"].to_numpy())
         opcost_i = np.array(grid_mm["op_cost_i"].to_numpy())
 
@@ -429,10 +429,15 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
     revenues = np.sum(revenues_i) + np.sum(heat_cost_s)
     op_cost = np.sum(opcost_i) + np.sum(opcost_s)
 
-    opex_wo_grid = np.sum(opex_i_wogrid) + np.sum(opex_s_wogrid)  # all opex without grid
-    capex_wo_grid = np.sum(capex_i_wogrid) + np.sum(capex_s_wogrid)  # all capex without grid
-    revenues_wo_grid = np.sum(revenues_i_wogrid) + np.sum(heat_cost_s_wogrid)
-    op_cost_wo_grid = np.sum(opcost_i_wogrid) + np.sum(opcost_s_wogrid)
+    #opex_wo_grid = np.sum(opex_i_wogrid) + np.sum(opex_s_wogrid)  # all opex without grid
+    #capex_wo_grid = np.sum(capex_i_wogrid) + np.sum(capex_s_wogrid)  # all capex without grid
+    #revenues_wo_grid = np.sum(revenues_i_wogrid) + np.sum(heat_cost_s_wogrid)
+    #op_cost_wo_grid = np.sum(opcost_i_wogrid) + np.sum(opcost_s_wogrid)
+
+    opex_wo_grid = opex
+    capex_wo_grid = capex - net_cost
+    revenues_wo_grid = revenues
+    op_cost_wo_grid = op_cost
 
     r = discountrate_i[0]
     # +- 50% variations with total 5 values in R
@@ -557,8 +562,10 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
         rev_yearly_wo += rev_new_wo / (1 + (r_b / 100)) ** i
 
     PayBack_i = (capex_i + opex_i) / (rev_new)
-
     PayBack_i_wogrid = (capex_i_wogrid + opex_i_wogrid) / (rev_new_wo)
+    PayBack_i[PayBack_i < 0] = np.nan
+    PayBack_i_wogrid[PayBack_i_wogrid < 0] = np.nan
+
 
     ### INTERNAL RATE OF RETURN IRR for Private Business scenario
 
