@@ -254,6 +254,8 @@ def BM(input_dict: Dict, generate_template: bool = True) -> Dict:
         elif i.find("sink") >= 0:
             dig = re.findall("sink\B([0-9]+)", i)
             tech = "sink" + dig[0]
+        else:
+            tech ="dhn"
 
         teo_agents_fil.append(tech)
 
